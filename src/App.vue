@@ -23,18 +23,18 @@
           易标签 <span class="text-sm font-bold text-[#9ca3af] ml-1 tracking-normal">Easy Label</span>
         </h1>
         <div class="flex gap-3">
-          <button @click="refreshPage" class="btn btn-outline text-[#6b7280] hover:text-[#1677ff]">
+          <button @click="refreshPage" class="btn btn-outline text-[#6b7280] hover:text-[#1677ff] hover:bg-[#eff6ff]">
              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg> 刷新
           </button>
           <div class="w-px h-5 bg-[#e5e7eb] mt-2 mx-1"></div>
-          <button @click="showImportShareModal = true" class="btn btn-outline text-[#0284c7] border-[#bae6fd] bg-[#f0f9ff] hover:bg-[#e0f2fe]">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>提取分享码
+          <button @click="showImportShareModal = true" class="btn btn-outline text-[#0284c7] bg-[#f0f9ff] hover:bg-[#e0f2fe]">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>提取分享码
           </button>
           <button @click="triggerJsonImport" class="btn btn-outline">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>导入本地库
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>导入本地库
           </button>
           <button @click="exportJsonLibrary" class="btn btn-outline">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>导出本地库
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>导出本地库
           </button>
           <input type="file" ref="jsonInputRef" accept=".json" class="hidden" @change="handleJsonImport" />
         </div>
@@ -112,7 +112,7 @@
             <input type="file" ref="pdfInputRef" accept="application/pdf" class="hidden" @change="handleBatchPDF" />
             <div class="w-px h-6 bg-[#e5e7eb] mt-1.5 mx-1"></div>
             <button @click="triggerSaveModal('save')" class="btn bg-[#10b981] text-white hover:bg-[#059669] shadow-md border-transparent shadow-[#10b98133] px-6">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2-2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>保存
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>保存
             </button>
             <button @click="closeEditor" class="btn btn-outline bg-[#f1f5f9] border-[#e5e7eb] text-[#6b7280] hover:text-[#1f2937] hover:bg-[#e2e8f0] px-4" title="关闭画板">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -124,54 +124,52 @@
           <ComponentLibrary @add-item="handleSidebarClickAdd" />
 
           <main class="flex-1 flex flex-col relative overflow-hidden bg-[#f3f4f6]">
-            <div class="h-[58px] bg-white border-b border-[#e5e7eb] shrink-0 z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-x-auto flex flex-nowrap items-center px-4 gap-2">
-              <div class="flex flex-nowrap items-center gap-2 shrink-0">
-                <button @click="openResizeModal" class="btn btn-outline text-xs h-8 px-3 hover:bg-[#eff6ff] hover:text-[#1677ff] shrink-0">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>修改尺寸
-                </button>
-                <div class="w-px h-5 bg-[#d1d5db] mx-1 shrink-0"></div>
-                <button @click="addText" class="btn btn-outline text-xs h-8 px-3 hover:text-[#1677ff] shrink-0">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>添加文本
-                </button>
-                <button @click="triggerImageUpload" class="btn btn-outline text-xs h-8 px-3 hover:text-[#1677ff] shrink-0">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>导入图片
-                </button>
-                <input type="file" ref="imageInputRef" accept="image/*" class="hidden" @change="handleImageUpload" />
-                <button @click="addLine" class="btn btn-outline text-xs h-8 px-3 hover:text-[#1677ff] shrink-0">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>添加线条
-                </button>
-                <div class="w-px h-5 bg-[#d1d5db] mx-1 shrink-0"></div>
-                
-                <button @click="resetBarcode" class="btn text-xs text-[#ea580c] bg-[#fff7ed] border border-transparent hover:bg-[#ffedd5] h-8 px-3 shrink-0">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>复原条码
-                </button>
-                <button @click="showCustomBarcodeModal = true" class="btn text-xs text-[#ea580c] bg-[#fff7ed] border border-transparent hover:bg-[#ffedd5] h-8 px-3 shrink-0">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><path d="M3 5h2v14H3V5zm4 0h3v14H7V5zm5 0h2v14h-2V5zm4 0h3v14h-3V5zm5 0h2v14h-2V5z"/></svg>自定义条码
-                </button>
-              </div>
+            <div class="min-h-[58px] bg-white border-b border-[#e5e7eb] flex flex-wrap items-center px-4 gap-2 shrink-0 z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+              <button @click="openResizeModal" class="btn btn-outline text-xs h-8 px-3 hover:bg-[#eff6ff] hover:text-[#1677ff]">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>修改尺寸
+              </button>
+              <div class="w-px h-5 bg-[#d1d5db] mx-1"></div>
+              <button @click="addText" class="btn btn-outline text-xs h-8 px-3 hover:text-[#1677ff]">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>添加文本
+              </button>
+              <button @click="triggerImageUpload" class="btn btn-outline text-xs h-8 px-3 hover:text-[#1677ff]">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>导入图片
+              </button>
+              <input type="file" ref="imageInputRef" accept="image/*" class="hidden" @change="handleImageUpload" />
+              <button @click="addLine" class="btn btn-outline text-xs h-8 px-3 hover:text-[#1677ff]">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>添加线条
+              </button>
+              <div class="w-px h-5 bg-[#d1d5db] mx-1"></div>
+              
+              <button @click="resetBarcode" class="btn text-xs text-[#ea580c] bg-[#fff7ed] border border-transparent hover:bg-[#ffedd5] h-8 px-3">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>复原条码
+              </button>
+              <button @click="showCustomBarcodeModal = true" class="btn text-xs text-[#ea580c] bg-[#fff7ed] border border-transparent hover:bg-[#ffedd5] h-8 px-3">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><path d="M3 5h2v14H3V5zm4 0h3v14H7V5zm5 0h2v14h-2V5zm4 0h3v14h-3V5zm5 0h2v14h-2V5z"/></svg>自定义条码
+              </button>
 
-              <div class="ml-auto flex flex-nowrap items-center gap-2 shrink-0">
-                <div v-if="activeElement" class="flex flex-nowrap items-center gap-1 shrink-0">
-                  <div v-if="activeElement.type === 'text'" class="flex flex-nowrap items-center gap-1 bg-[#f1f5f9] border border-transparent rounded-lg px-1 h-8 shrink-0">
-                    <span class="text-[11px] text-[#6b7280] font-bold px-1 shrink-0">字号</span>
-                    <button @click="changeFontSize(-1)" class="w-6 h-6 hover:bg-[#e2e8f0] rounded-md font-bold text-[#4b5563] shrink-0">-</button>
-                    <span class="text-[13px] font-mono w-6 text-center font-bold text-[#1677ff] shrink-0">{{ parseInt(activeElement.fontSize || '24') }}</span>
-                    <button @click="changeFontSize(1)" class="w-6 h-6 hover:bg-[#e2e8f0] rounded-md font-bold text-[#4b5563] shrink-0">+</button>
-                    <div class="w-px h-4 bg-[#cbd5e1] mx-1 shrink-0"></div>
-                    <button @click="toggleBold" :class="{'bg-[#1677ff] text-white': activeElement.fontWeight === 'bold'}" class="w-6 h-6 hover:bg-[#e2e8f0] rounded-md font-bold transition-colors shrink-0">B</button>
+              <div class="ml-auto flex items-center">
+                <div v-if="activeElement" class="flex items-center gap-1 transition-all">
+                  <div v-if="activeElement.type === 'text'" class="flex items-center gap-1 bg-[#f1f5f9] border border-transparent rounded-lg px-1 h-8">
+                    <span class="text-[11px] text-[#6b7280] font-bold px-1">字号</span>
+                    <button @click="changeFontSize(-1)" class="w-6 h-6 hover:bg-[#e2e8f0] rounded-md font-bold text-[#4b5563]">-</button>
+                    <span class="text-[13px] font-mono w-6 text-center font-bold text-[#1677ff]">{{ parseInt(activeElement.fontSize || '24') }}</span>
+                    <button @click="changeFontSize(1)" class="w-6 h-6 hover:bg-[#e2e8f0] rounded-md font-bold text-[#4b5563]">+</button>
+                    <div class="w-px h-4 bg-[#cbd5e1] mx-1"></div>
+                    <button @click="toggleBold" :class="{'bg-[#1677ff] text-white': activeElement.fontWeight === 'bold'}" class="w-6 h-6 hover:bg-[#e2e8f0] rounded-md font-bold transition-colors flex items-center justify-center">B</button>
                   </div>
                   
-                  <div v-if="activeElement.type === 'line'" class="flex flex-nowrap items-center gap-1 bg-[#f1f5f9] border border-transparent rounded-lg px-1 h-8 shrink-0">
-                    <span class="text-[11px] text-[#6b7280] font-bold px-1 shrink-0">长度</span>
-                    <input type="number" :value="linePhysicalLength" @change="updateLineLength($event)" class="w-12 bg-white border border-[#d1d5db] rounded text-center font-mono text-[13px] text-[#1677ff] font-bold px-1 h-6 shrink-0" />
-                    <span class="text-[10px] text-[#9ca3af] font-bold shrink-0">mm</span>
-                    <div class="w-px h-4 bg-[#cbd5e1] mx-1 shrink-0"></div>
-                    <button @click="rotateLine" class="px-2 h-6 hover:bg-[#e2e8f0] rounded-md text-[12px] font-bold text-[#374151] flex items-center gap-1 shrink-0"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>旋转</button>
+                  <div v-if="activeElement.type === 'line'" class="flex items-center gap-1 bg-[#f1f5f9] border border-transparent rounded-lg px-1 h-8">
+                    <span class="text-[11px] text-[#6b7280] font-bold px-1">长度</span>
+                    <input type="number" :value="linePhysicalLength" @change="updateLineLength($event)" class="w-12 bg-white border border-[#d1d5db] rounded outline-none text-center font-mono text-[13px] text-[#1677ff] font-bold py-0.5 focus:border-[#1677ff] transition-colors" />
+                    <span class="text-[10px] text-[#9ca3af] font-bold mr-1">mm</span>
+                    <div class="w-px h-4 bg-[#cbd5e1] mx-1"></div>
+                    <button @click="rotateLine" class="px-2 h-6 hover:bg-[#e2e8f0] rounded-md text-xs font-bold flex items-center gap-1 text-[#374151]"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>旋转</button>
                   </div>
 
-                  <div class="w-px h-5 bg-[#e5e7eb] mx-2 shrink-0"></div>
+                  <div class="w-px h-5 bg-[#e5e7eb] mx-2"></div>
                   
-                  <button @click="deleteActive" class="btn text-xs text-[#ff4d4f] hover:bg-[#fef2f2] bg-[#fef2f2] border border-transparent h-8 flex items-center gap-1 px-3 shrink-0">
+                  <button @click="deleteActive" class="btn text-xs text-[#ff4d4f] hover:bg-[#fef2f2] bg-[#fef2f2] border border-transparent h-8 flex items-center gap-1 px-3">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 删除
                   </button>
                 </div>
@@ -181,10 +179,11 @@
             <CanvasArea 
               v-model:elements="currentLabel.elements"
               v-model:activeId="activeElementId"
-              v-model:scale="canvasScale"
               :wMM="currentLabel.wMM"
               :hMM="currentLabel.hMM"
+              :scale="canvasScale"
             />
+            
           </main>
         </div>
       </div>
@@ -282,8 +281,8 @@
     <div v-if="showDeleteModal" class="fixed inset-0 bg-[#00000099] flex items-center justify-center z-[2000] backdrop-blur-sm px-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[360px] overflow-hidden flex flex-col text-center">
         <div class="p-8">
-          <div class="w-16 h-16 bg-[#fef2f2] text-[#ff4d4f] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
+          <div class="w-16 h-16 bg-[#fef2f2] text-[#ff4d4f] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#fee2e2]">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </div>
           <h3 class="text-xl font-extrabold text-[#1f2937] mb-2">永久删除标签？</h3>
           <p class="text-sm text-[#6b7280] font-medium">删除后数据将无法恢复，请谨慎操作。</p>
@@ -329,6 +328,23 @@
       </div>
     </div>
 
+    <div v-if="showErrorModal" class="fixed inset-0 bg-[#00000099] flex items-center justify-center z-[3000] backdrop-blur-sm px-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[360px] overflow-hidden flex flex-col text-center">
+        <div class="p-8">
+          <div class="w-16 h-16 bg-[#fef2f2] text-[#ff4d4f] rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-[#fee2e2]">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h3 class="text-xl font-extrabold text-[#1f2937] mb-3">合成中断</h3>
+          <p class="text-[15px] text-[#4b5563] font-bold">{{ errorMessage }}</p>
+        </div>
+        <div class="px-6 py-5 bg-[#f9fafb] border-t border-[#e5e7eb]">
+          <button @click="showErrorModal = false" class="w-full py-3.5 rounded-xl bg-[#ff4d4f] text-white font-bold hover:bg-[#dc2626] shadow-md transition-all text-[15px] border-none cursor-pointer outline-none tracking-widest">
+            我知道了
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -342,7 +358,7 @@ import { exportSinglePDF, exportBatchPDF } from './utils/pdfExport';
 import { cropImageWhitespace } from './utils/imageCrop';
 import type { LabelData } from './types';
 
-const API_BASE_URL = 'https://easylabel.cloud/api/share';
+const API_BASE_URL = 'https://api.easylabel.cloud/api/share'; // 您可修改为您的正式 API 地址
 const MM_TO_PX = 3.78; 
 const ZOOM_FACTOR = 2;
 
@@ -371,6 +387,10 @@ const showCustomBarcodeModal = ref(false);
 const showImportShareModal = ref(false);
 const showShareResultModal = ref(false);
 
+// ★ 新增：错误弹窗相关的状态变量
+const showErrorModal = ref(false);
+const errorMessage = ref('');
+
 const inputShareCode = ref('');
 const displayShareCode = ref('');
 
@@ -392,7 +412,7 @@ onMounted(async () => {
   document.addEventListener('keydown', handleGlobalKeydown);
   window.addEventListener('resize', autoFitCanvas);
   
-  window.showToast = function(message: string, type = 'info') {
+  (window as any).showToast = function(message: string, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
@@ -413,7 +433,9 @@ onMounted(async () => {
 
 onUnmounted(() => { document.removeEventListener('keydown', handleGlobalKeydown); window.removeEventListener('resize', autoFitCanvas); });
 
-function showToast(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') { if (window.showToast) window.showToast(message, type); }
+function showToast(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') { 
+  if ((window as any).showToast) (window as any).showToast(message, type); 
+}
 
 function autoFitCanvas() {
   if (currentView.value !== 'editor') return;
@@ -443,23 +465,10 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 function refreshPage() { window.location.reload(); }
 
 async function reloadGallery() {
-  const wasLoading = isLoading.value;
-  if (!wasLoading) {
-    isLoading.value = true; 
-    loadingText.value = '加载本地数据库...';
-  }
-  
-  try {
-    const labels = await getAllLabels();
-    savedLabels.value = labels.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-  } catch (error) {
-    savedLabels.value = [];
-    showToast('加载数据库失败，已清空', 'warning');
-  } finally {
-    if (!wasLoading) {
-      isLoading.value = false;
-    }
-  }
+  isLoading.value = true; loadingText.value = '加载本地数据库...';
+  savedLabels.value = await getAllLabels();
+  savedLabels.value.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+  isLoading.value = false;
 }
 
 function getBarcodeDefaultStyle(hMM: number) {
@@ -472,7 +481,6 @@ function openEditor(label: LabelData | null) {
   activeElementId.value = null; showEditor.value = true; autoFitCanvas();
 }
 
-// ★ 修复：只要有一边小于占位条码标准（w<70 或 h<20），就直接跳过条码生成
 function confirmNewCanvas() {
   if (!newW.value || !newH.value) return showToast('请输入完整尺寸', 'warning');
   currentLabel.value = { id: Date.now().toString(), name: '新建标签', wMM: newW.value, hMM: newH.value, elements: [] };
@@ -628,20 +636,22 @@ async function doExportPDF() {
     } catch(err) { showToast('导出失败', 'error'); } finally { isLoading.value = false; }
   }, 150);
 }
+
 function triggerPdfImport() {
   const barcodeEl = currentLabel.value.elements.find(el => el.type === 'barcode');
   if (!barcodeEl) return showToast('请先新增条码进行占位', 'warning');
   pdfInputRef.value?.click();
 }
 
-// ★ 修复：通过在 JS 层直接读取 files[0] 保证 100% 只处理一个文件
 async function handleBatchPDF(e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0]; 
   if (!file) return;
   if (file.type !== 'application/pdf') { showToast('只能上传 PDF 文件！', 'warning'); return; }
   const barcodeEl = currentLabel.value.elements.find(el => el.type === 'barcode'); if (!barcodeEl) return;
+  
   activeElementId.value = null; loadingProgress.value = 0; isLoading.value = true; loadingText.value = '极速合成中...';
+  
   setTimeout(async () => {
     try {
       const canvasEl = document.getElementById('canvas'); const sizerEl = document.getElementById('canvasSizer');
@@ -652,7 +662,9 @@ async function handleBatchPDF(e: Event) {
         showToast('合成完成！', 'success');
       }
     } catch(err: any) { 
-      showToast(err.message || '合成失败', 'error'); 
+      // ★ 核心改动：抛弃 window.alert，唤起我们自定义的美化版系统阻断弹窗
+      errorMessage.value = '请检查文件是否为条码';
+      showErrorModal.value = true;
     } finally { 
       isLoading.value = false; 
       loadingProgress.value = null; 
@@ -661,11 +673,10 @@ async function handleBatchPDF(e: Event) {
   }, 150);
 }
 
-// ★ 修复：加入 AbortController 防国内 DNS 污染造成的无限卡顿 ★
 async function uploadLabelToCloud(labelData: LabelData) {
   isLoading.value = true; loadingText.value = '生成云端分享码...';
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8秒超时强制熔断
+  const timeoutId = setTimeout(() => controller.abort(), 8000); 
   try {
     const response = await fetch(API_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(labelData), signal: controller.signal });
     const result = await response.json(); 
@@ -673,16 +684,12 @@ async function uploadLabelToCloud(labelData: LabelData) {
     displayShareCode.value = result.shareCode; showShareResultModal.value = true;
     try { await navigator.clipboard.writeText(result.shareCode); } catch(e){}
   } catch (e: any) { 
-    if (e.name === 'AbortError') {
-       showToast('国内网络超时，请阅读下方自定义域名教程', 'error');
-    } else {
-       showToast('网络请求失败', 'error'); 
-    }
+    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast('网络请求失败', 'error'); }
   } finally { clearTimeout(timeoutId); isLoading.value = false; }
 }
 
 async function downloadLabelFromCloud() {
-    if (inputShareCode.value.length !== 6) return showToast('请输入完整的6位分享码', 'warning');
+  if (inputShareCode.value.length !== 6) return showToast('请输入完整的6位分享码', 'warning');
   isLoading.value = true; loadingText.value = '云端检索中...';
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -700,20 +707,14 @@ async function downloadLabelFromCloud() {
     showImportShareModal.value = false; inputShareCode.value = '';
     showToast('提取成功！已存入本地库', 'success');
   } catch(e: any) { 
-    if (e.name === 'AbortError') {
-       showToast('国内网络超时，请阅读下方自定义域名教程', 'error');
-    } else {
-       showToast(e.message || '提取失败', 'error'); 
-    }
+    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast(e.message || '提取失败', 'error'); }
   } finally { clearTimeout(timeoutId); isLoading.value = false; }
 }
-
-declare global { interface Window { showToast: (msg: string, type?: 'info'|'success'|'warning'|'error') => void; } }
 </script>
 
 <style scoped>
 @reference "tailwindcss";
 
 .btn { @apply flex items-center justify-center gap-1.5 border-none rounded-lg cursor-pointer font-bold transition-all whitespace-nowrap; }
-.btn-outline { @apply bg-[#f1f5f9] border border-transparent text-[#475569] hover:text-[#1677ff] hover:bg-[#e0f2fe] px-4 py-2.5 text-[13px] shadow-sm; }
+.btn-outline { @apply bg-[#f9fafb] border border-[#e5e7eb] text-[#4b5563] hover:border-[#1677ff] hover:text-[#1677ff] hover:bg-[#eff6ff] px-4 py-2.5 text-[13px] shadow-sm; }
 </style>

@@ -45,8 +45,8 @@
       "dist/**/*",
       "dist-electron/**/*"
     ],
-    "icon": "public/icon.svg",
     "mac": {
+      "icon": "public/icon.png",
       "target": [
         {
           "target": "dmg",
@@ -55,6 +55,7 @@
       ]
     },
     "win": {
+      "icon": "public/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -63,6 +64,7 @@
       ]
     },
     "linux": {
+      "icon": "public/icon.png",
       "target": [
         {
           "target": "AppImage",
@@ -74,7 +76,10 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico"
     }
   }
 }

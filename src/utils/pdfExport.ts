@@ -3,74 +3,12 @@ import { jsPDF } from 'jspdf';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { LabelElement } from '../types';
 
+// @ts-ignore
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 const MM_TO_PX = 3.78;
 const ZOOM_FACTOR = 2;
-
-function isBarcodeImage(data: Uint8ClampedArray, width: number, height: number): { isBarcode: boolean; reason: string } {
-    let blackPixels = 0;
-    let whitePixels = 0;
-    let totalPixels = 0;
-    let transitions = 0;
-    
-    const blackThreshold = 128;
-    const sampleStep = Math.max(1, Math.floor(height / 100));
-    
-    for (let y = 0; y < height; y += sampleStep) {
-        let prevIsBlack = false;
-        let lineTransitions = 0;
-        
-        for (let x = 0; x < width; x++) {
-            const idx = (y * width + x) * 4;
-            const r = data[idx];
-            const g = data[idx + 1];
-            const b = data[idx + 2];
-            const alpha = data[idx + 3];
-            
-            if (alpha < 128) continue;
-            
-            totalPixels++;
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            const isBlack = gray < blackThreshold;
-            
-            if (isBlack) {
-                blackPixels++;
-            } else {
-                whitePixels++;
-            }
-            
-            if (x > 0 && isBlack !== prevIsBlack) {
-                lineTransitions++;
-            }
-            prevIsBlack = isBlack;
-        }
-        transitions += lineTransitions;
-    }
-    
-    if (totalPixels < 100) {
-        return { isBarcode: false, reason: '内容太少' };
-    }
-    
-    const blackRatio = blackPixels / totalPixels;
-    const whiteRatio = whitePixels / totalPixels;
-    
-    if (blackRatio < 0.05 || whiteRatio < 0.05) {
-        return { isBarcode: false, reason: '对比度不足，可能不是条码' };
-    }
-    
-    if (blackRatio > 0.7 || whiteRatio > 0.7) {
-        return { isBarcode: false, reason: '黑白比例不均衡，可能不是条码' };
-    }
-    
-    const avgTransitionsPerLine = transitions / Math.ceil(height / sampleStep);
-    if (avgTransitionsPerLine < 4) {
-        return { isBarcode: false, reason: '条纹特征不明显，可能不是条码' };
-    }
-    
-    return { isBarcode: true, reason: '' };
-}
 
 export async function captureCanvasHQ(canvasEl: HTMLElement, sizerEl: HTMLElement): Promise<string> {
     const wrapper = canvasEl.parentElement!;
@@ -141,49 +79,105 @@ export async function exportBatchPDF(
         tempCanvas.width = viewport.width; 
         tempCanvas.height = viewport.height;
         
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        await (page as any).render({ canvasContext: ctx, viewport: viewport }).promise;
         
         const imgData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         const data = imgData.data;
-        let top = null, bottom = null, left = null, right = null;
-        let hasContent = false;
+        
+        // 扫描页面是否为空白
+        const rowHasContent = new Array(tempCanvas.height).fill(false);
+        let hasAnyContent = false;
         for (let y = 0; y < tempCanvas.height; y++) {
             for (let x = 0; x < tempCanvas.width; x++) {
                 const idx = (y * tempCanvas.width + x) * 4;
-                const r = data[idx] as number; 
-                const g = data[idx+1] as number; 
-                const b = data[idx+2] as number; 
-                const alpha = data[idx+3] as number;
-                
+                const r = data[idx] as number; const g = data[idx+1] as number; const b = data[idx+2] as number; const alpha = data[idx+3] as number;
                 if (alpha > 10 && (r < 240 || g < 240 || b < 240)) {
-                    hasContent = true;
-                    if (top === null) top = y; bottom = y;
-                    if (left === null || x < left) left = x;
-                    if (right === null || x > right) right = x;
+                    rowHasContent[y] = true; 
+                    hasAnyContent = true;
+                    break;
                 }
             }
         }
 
-        if (!hasContent) {
-            throw new Error(`第 ${i} 页未检测到内容，请检查 PDF 文件！`);
-        }
-
         let cropCanvas = tempCanvas;
-        if (top !== null && bottom !== null && left !== null && right !== null) {
-             const trimW = right - left + 1; const trimH = bottom - top + 1;
-             if (trimW > 0 && trimH > 0) {
-                 cropCanvas = document.createElement('canvas');
-                 cropCanvas.width = trimW; cropCanvas.height = trimH;
-                 cropCanvas.getContext('2d')?.drawImage(tempCanvas, left, top, trimW, trimH, 0, 0, trimW, trimH);
-             }
-        }
+        
+        if (hasAnyContent) {
+            const blocks: {top: number, bottom: number}[] = [];
+            let currentBlock: {top: number, bottom: number} | null = null;
+            const gapTolerance = Math.max(10, Math.floor(tempCanvas.height * 0.02)); 
+            let emptyCount = 0;
+            
+            for (let y = 0; y < tempCanvas.height; y++) {
+                if (rowHasContent[y]) {
+                    if (!currentBlock) currentBlock = { top: y, bottom: y };
+                    else currentBlock.bottom = y;
+                    emptyCount = 0;
+                } else {
+                    if (currentBlock) {
+                        emptyCount++;
+                        if (emptyCount > gapTolerance) {
+                            blocks.push(currentBlock);
+                            currentBlock = null;
+                        }
+                    }
+                }
+            }
+            if (currentBlock) blocks.push(currentBlock);
 
-        const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
-        if (cropCtx) {
-            const cropImgData = cropCtx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
-            const barcodeCheck = isBarcodeImage(cropImgData.data, cropCanvas.width, cropCanvas.height);
-            if (!barcodeCheck.isBarcode) {
-                throw new Error(`第 ${i} 页${barcodeCheck.reason}，请检查 PDF 文件是否包含有效条码！`);
+            let bestBlock = blocks[0];
+            let globalMaxTrans = 0;
+
+            for (const block of blocks) {
+                let blockMaxTrans = 0;
+                for (let y = block.top; y <= block.bottom; y++) {
+                    let lineTrans = 0;
+                    let prevBlack = false;
+                    for (let x = 0; x < tempCanvas.width; x++) {
+                        const idx = (y * tempCanvas.width + x) * 4;
+                        const r = data[idx] as number; const g = data[idx+1] as number; const b = data[idx+2] as number; const alpha = data[idx+3] as number;
+                        const isBlack = alpha > 50 && r < 120 && g < 120 && b < 120;
+                        if (isBlack !== prevBlack) {
+                            lineTrans++;
+                            prevBlack = isBlack;
+                        }
+                    }
+                    if (lineTrans > blockMaxTrans) blockMaxTrans = lineTrans;
+                }
+                if (blockMaxTrans > globalMaxTrans) {
+                    globalMaxTrans = blockMaxTrans;
+                    bestBlock = block;
+                }
+            }
+
+            let top = null, bottom = null, left = null, right = null;
+
+            if (globalMaxTrans > 15) {
+                top = bestBlock.top;
+                bottom = bestBlock.bottom;
+            } else {
+                top = blocks[0].top;
+                bottom = blocks[blocks.length - 1].bottom;
+            }
+
+            left = tempCanvas.width; right = 0;
+            for (let y = top; y <= bottom; y++) {
+                for (let x = 0; x < tempCanvas.width; x++) {
+                    const idx = (y * tempCanvas.width + x) * 4;
+                    const r = data[idx] as number; const g = data[idx+1] as number; const b = data[idx+2] as number; const alpha = data[idx+3] as number;
+                    if (alpha > 10 && (r < 240 || g < 240 || b < 240)) {
+                        if (x < left) left = x;
+                        if (x > right) right = x;
+                    }
+                }
+            }
+
+            if (top !== null && bottom !== null && left !== null && right !== null) {
+                 const trimW = right - left + 1; const trimH = bottom - top + 1;
+                 if (trimW > 0 && trimH > 0) {
+                     cropCanvas = document.createElement('canvas');
+                     cropCanvas.width = trimW; cropCanvas.height = trimH;
+                     cropCanvas.getContext('2d')?.drawImage(tempCanvas, left, top, trimW, trimH, 0, 0, trimW, trimH);
+                 }
             }
         }
 
@@ -191,20 +185,24 @@ export async function exportBatchPDF(
         if (i > 1) doc.addPage([wMM, hMM], orientation); 
         doc.addImage(templateImgData, 'JPEG', 0, 0, wMM, hMM); 
 
-        const imgRatio = cropCanvas.width / cropCanvas.height;
-        const placeholderRatio = mmW / mmH;
-        let finalW = mmW, finalH = mmH, finalX = mmX, finalY = mmY;
+        // 只要不是全白页面，就进行居中合成
+        if (hasAnyContent) {
+            const imgRatio = cropCanvas.width / cropCanvas.height;
+            const placeholderRatio = mmW / mmH;
+            let finalW = mmW, finalH = mmH, finalX = mmX, finalY = mmY;
 
-        if (imgRatio > placeholderRatio) {
-            finalH = mmW / imgRatio;
-            finalY = mmY + (mmH - finalH) / 2;
-        } else {
-            finalW = mmH * imgRatio;
-            finalX = mmX + (mmW - finalW) / 2;
+            if (imgRatio > placeholderRatio) {
+                finalH = mmW / imgRatio;
+                finalY = mmY + (mmH - finalH) / 2;
+            } else {
+                finalW = mmH * imgRatio;
+                finalX = mmX + (mmW - finalW) / 2;
+            }
+
+            doc.addImage(barcodeImgData, 'PNG', finalX, finalY, finalW, finalH);
         }
-
-        doc.addImage(barcodeImgData, 'PNG', finalX, finalY, finalW, finalH);
         await new Promise(res => setTimeout(res, 10)); 
     }
+    
     doc.save(`${fileName}.pdf`);
 }
