@@ -36,7 +36,6 @@ export async function getAllLabels(): Promise<LabelData[]> {
       tx.onerror = () => reject(tx.error);
     });
   } catch (error) {
-    console.error('getAllLabels error:', error);
     return [];
   }
 }

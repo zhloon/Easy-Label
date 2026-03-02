@@ -36,7 +36,6 @@ export async function loadLibraryData(): Promise<ComponentCategory[]> {
       categories.push({ parentTitle: "警示语库", groups: [{ groupTitle: "常用警示语", items: fallbackPhrases }] });
     }
   } catch (error) {
-    console.warn("网络异常，启用系统内置数据。");
     categories.push({ parentTitle: "警示语库", groups: [{ groupTitle: "常用警示语", items: fallbackPhrases }] });
   }
   return categories;

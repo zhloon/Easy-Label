@@ -41,11 +41,8 @@ export async function exportBatchPDF(
     file: File, canvasEl: HTMLElement, sizerEl: HTMLElement, wMM: number, hMM: number, fileName: string, barcodeElement: LabelElement,
     onProgress: (percent: number, current: number, total: number) => void
 ) {
-    console.log('开始处理PDF文件...', { fileName, wMM, hMM, barcodeElement });
     const arrayBuffer = await file.arrayBuffer();
-    console.log('文件已读取为ArrayBuffer');
     const pdf = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
-    console.log('PDF已加载，页数:', pdf.numPages);
     const numPages = pdf.numPages;
 
     const orientation = wMM > hMM ? 'l' : 'p';
