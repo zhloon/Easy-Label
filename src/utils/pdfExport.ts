@@ -9,6 +9,69 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const MM_TO_PX = 3.78;
 const ZOOM_FACTOR = 2;
 
+function isBarcodeImage(data: Uint8ClampedArray, width: number, height: number): { isBarcode: boolean; reason: string } {
+    let blackPixels = 0;
+    let whitePixels = 0;
+    let totalPixels = 0;
+    let transitions = 0;
+    
+    const blackThreshold = 128;
+    const sampleStep = Math.max(1, Math.floor(height / 100));
+    
+    for (let y = 0; y < height; y += sampleStep) {
+        let prevIsBlack = false;
+        let lineTransitions = 0;
+        
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const alpha = data[idx + 3];
+            
+            if (alpha < 128) continue;
+            
+            totalPixels++;
+            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            const isBlack = gray < blackThreshold;
+            
+            if (isBlack) {
+                blackPixels++;
+            } else {
+                whitePixels++;
+            }
+            
+            if (x > 0 && isBlack !== prevIsBlack) {
+                lineTransitions++;
+            }
+            prevIsBlack = isBlack;
+        }
+        transitions += lineTransitions;
+    }
+    
+    if (totalPixels < 100) {
+        return { isBarcode: false, reason: '内容太少' };
+    }
+    
+    const blackRatio = blackPixels / totalPixels;
+    const whiteRatio = whitePixels / totalPixels;
+    
+    if (blackRatio < 0.05 || whiteRatio < 0.05) {
+        return { isBarcode: false, reason: '对比度不足，可能不是条码' };
+    }
+    
+    if (blackRatio > 0.7 || whiteRatio > 0.7) {
+        return { isBarcode: false, reason: '黑白比例不均衡，可能不是条码' };
+    }
+    
+    const avgTransitionsPerLine = transitions / Math.ceil(height / sampleStep);
+    if (avgTransitionsPerLine < 4) {
+        return { isBarcode: false, reason: '条纹特征不明显，可能不是条码' };
+    }
+    
+    return { isBarcode: true, reason: '' };
+}
+
 export async function captureCanvasHQ(canvasEl: HTMLElement, sizerEl: HTMLElement): Promise<string> {
     const wrapper = canvasEl.parentElement!;
     const origTransform = wrapper.style.transform;
@@ -102,7 +165,7 @@ export async function exportBatchPDF(
         }
 
         if (!hasContent) {
-            throw new Error(`第 ${i} 页未检测到条码，请检查 PDF 文件！`);
+            throw new Error(`第 ${i} 页未检测到内容，请检查 PDF 文件！`);
         }
 
         let cropCanvas = tempCanvas;
@@ -113,6 +176,15 @@ export async function exportBatchPDF(
                  cropCanvas.width = trimW; cropCanvas.height = trimH;
                  cropCanvas.getContext('2d')?.drawImage(tempCanvas, left, top, trimW, trimH, 0, 0, trimW, trimH);
              }
+        }
+
+        const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+        if (cropCtx) {
+            const cropImgData = cropCtx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
+            const barcodeCheck = isBarcodeImage(cropImgData.data, cropCanvas.width, cropCanvas.height);
+            if (!barcodeCheck.isBarcode) {
+                throw new Error(`第 ${i} 页${barcodeCheck.reason}，请检查 PDF 文件是否包含有效条码！`);
+            }
         }
 
         const barcodeImgData = cropCanvas.toDataURL('image/png', 1.0); 
