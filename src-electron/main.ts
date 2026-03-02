@@ -16,12 +16,12 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false,
+      devTools: false,
     },
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
   } else {
     const htmlPath = path.join(__dirname, '../dist/index.html');
     
@@ -31,6 +31,10 @@ function createWindow() {
       mainWindow.loadURL(`data:text/html;charset=utf-8,<h1>File Not Found</h1>`);
     }
   }
+
+  mainWindow.webContents.on('devtools-opened', () => {
+    mainWindow?.webContents.closeDevTools();
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
