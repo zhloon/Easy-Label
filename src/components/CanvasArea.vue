@@ -1,0 +1,219 @@
+<template>
+  <div 
+    class="flex-1 overflow-auto relative canvas-bg bg-[#f3f4f6]"
+    id="workspace-container"
+    @mousedown="clearActive"
+    @dragover.prevent
+    @dragenter.prevent
+    @drop.prevent="handleDrop"
+  >
+    <div class="w-fit h-fit min-w-full min-h-full flex items-center justify-center p-[100px]">
+      <div id="canvasSizer" class="relative shrink-0 transition-all duration-150" :style="{ width: `${wMM * MM_TO_PX * ZOOM_FACTOR * scale}px`, height: `${hMM * MM_TO_PX * ZOOM_FACTOR * scale}px` }">
+        <div id="canvasWrapper" class="absolute top-0 left-0 origin-top-left transition-transform duration-150" :style="{ transform: `scale(${scale})` }">
+          
+          <div id="canvas" class="relative bg-white shadow-[0_12px_30px_rgba(0,0,0,0.15)] overflow-hidden" :style="{ width: `${wMM * MM_TO_PX * ZOOM_FACTOR}px`, height: `${hMM * MM_TO_PX * ZOOM_FACTOR}px` }">
+            
+            <div
+              v-for="el in elements" :key="el.id" :id="'el-' + el.id"
+              class="absolute cursor-move box-border select-none group"
+              :class="activeId === el.id && editingId !== el.id ? 'ring-2 ring-[#1677ff] ring-offset-0 z-[100]' : 'ring-1 ring-transparent hover:ring-gray-300 hover:ring-dashed'"
+              :style="{ width: el.style.width, height: el.style.height, left: el.style.left, top: el.style.top, zIndex: el.style.zIndex }"
+              @mousedown.stop="startDrag($event, el)"
+            >
+              
+              <div
+                v-if="el.type === 'text'"
+                :contenteditable="editingId === el.id"
+                @dblclick.stop="startEditing(el.id, $event)"
+                @blur="finishEditing($event, el)"
+                class="w-full h-full whitespace-pre-wrap break-words outline-none leading-snug text-black"
+                :class="{ 'cursor-text': editingId === el.id }"
+                :style="{ fontSize: el.fontSize, fontWeight: el.fontWeight }"
+              >{{ el.content }}</div>
+
+              <img v-else-if="el.type === 'image'" :src="el.imgUrl || el.originalUrl" class="w-full h-full object-contain pointer-events-none" draggable="false" />
+              
+              <div v-else-if="el.type === 'barcode'" class="w-full h-full bg-white border border-black flex flex-col items-center justify-center overflow-hidden p-1">
+                <div class="w-[80%] h-[45%] bg-black mt-1"></div>
+                <span class="text-[11px] mt-1 text-[#ff4d4f] font-bold text-center leading-tight tracking-wider">占位条码</span>
+              </div>
+              
+              <div v-else-if="el.type === 'line'" class="w-full h-full bg-black pointer-events-none"></div>
+
+              <div v-if="activeId === el.id && editingId !== el.id">
+                 <template v-if="['image', 'barcode', 'text'].includes(el.type)">
+                    <div class="resizer nw" @mousedown.stop="startResize($event, el, 'nw')"></div>
+                    <div class="resizer ne" @mousedown.stop="startResize($event, el, 'ne')"></div>
+                    <div class="resizer sw" @mousedown.stop="startResize($event, el, 'sw')"></div>
+                    <div class="resizer se" @mousedown.stop="startResize($event, el, 'se')"></div>
+                    <div v-if="el.type === 'text'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
+                    <div v-if="el.type === 'text'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
+                    <div v-if="el.type === 'text'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
+                    <div v-if="el.type === 'text'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
+                 </template>
+                 <template v-else-if="el.type === 'line'">
+                    <div v-if="el.isVertical === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
+                    <div v-if="el.isVertical === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
+                    <div v-if="el.isVertical === 'false'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
+                    <div v-if="el.isVertical === 'false'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
+                 </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sticky bottom-0 left-0 right-0 flex justify-between items-end p-6 pointer-events-none z-50">
+      <div class="bg-[#ffffffeb] backdrop-blur-md border border-[#e5e7eb] rounded-xl shadow-lg flex items-center px-4 py-2 pointer-events-none">
+         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#1677ff" stroke-width="2.5" class="mr-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M3 9h18M9 21V9"></path></svg>
+         <span class="text-[13px] font-bold text-[#6b7280] mr-2">画布物理尺寸:</span>
+         <span class="text-[14px] font-mono font-black text-[#1677ff] tracking-wide">{{ wMM }} × {{ hMM }} mm</span>
+      </div>
+
+      <div class="bg-[#ffffffeb] backdrop-blur-md border border-[#e5e7eb] rounded-xl shadow-lg flex items-center p-1 pointer-events-auto">
+         <button @click="zoomOut" class="w-8 h-8 flex items-center justify-center hover:bg-[#f3f4f6] rounded-lg font-bold text-[#4b5563] transition-colors text-lg">−</button>
+         <button @click="resetZoom" class="px-2 text-[13px] font-mono font-bold text-[#1677ff] w-14 text-center select-none hover:bg-[#f3f4f6] rounded-lg transition-colors">{{ Math.round(scale * 100) }}%</button>
+         <button @click="zoomIn" class="w-8 h-8 flex items-center justify-center hover:bg-[#f3f4f6] rounded-lg font-bold text-[#4b5563] transition-colors text-lg">+</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import type { LabelElement } from '../types';
+import { cropImageWhitespace } from '../utils/imageCrop'; 
+
+const props = defineProps<{ wMM: number; hMM: number; scale: number; }>();
+const emit = defineEmits<{
+  'update:scale': [value: number];
+}>();
+const elements = defineModel<LabelElement[]>('elements', { required: true });
+const activeId = defineModel<string | null>('activeId', { required: true });
+
+function zoomIn() {
+  emit('update:scale', Math.min(3, props.scale + 0.1));
+}
+
+function zoomOut() {
+  emit('update:scale', Math.max(0.2, props.scale - 0.1));
+}
+
+function resetZoom() {
+  emit('update:scale', 1);
+}
+
+const editingId = ref<string | null>(null);
+const MM_TO_PX = 3.78;
+const ZOOM_FACTOR = 2;
+
+function clearActive() { activeId.value = null; editingId.value = null; }
+
+function startEditing(id: string, e: MouseEvent) {
+  editingId.value = id; activeId.value = id;
+  setTimeout(() => { (e.target as HTMLElement).focus(); }, 0);
+}
+
+function finishEditing(e: FocusEvent, el: LabelElement) {
+  el.content = (e.target as HTMLElement).innerText;
+  editingId.value = null;
+}
+
+async function handleDrop(e: DragEvent) {
+  const dataStr = e.dataTransfer?.getData('text/plain');
+  if (dataStr) {
+    const payload = JSON.parse(dataStr);
+    const canvasRect = document.getElementById('canvas')?.getBoundingClientRect();
+    if (!canvasRect) return;
+    const logicLeft = (e.clientX - canvasRect.left) / props.scale;
+    const logicTop = (e.clientY - canvasRect.top) / props.scale;
+    
+    let finalImgUrl = payload.imgUrl;
+    let finalW = payload.type === 'text' ? 200 : 80;
+    let finalH = 80;
+
+    if (payload.type === 'image' && finalImgUrl) {
+      const cropResult = await cropImageWhitespace(finalImgUrl);
+      finalImgUrl = cropResult.url;
+      finalH = Math.round(80 * (cropResult.height / cropResult.width));
+    }
+
+    elements.value.push({
+      id: Date.now().toString(), type: payload.type, content: payload.content, imgUrl: finalImgUrl, originalUrl: payload.imgUrl, fontSize: '24px', fontWeight: 'normal',
+      style: { width: `${finalW}px`, height: payload.type === 'text' ? 'auto' : `${finalH}px`, left: `${logicLeft}px`, top: `${logicTop}px`, zIndex: 10 }
+    });
+  }
+}
+
+function startDrag(e: MouseEvent, el: LabelElement) {
+  if (e.button !== 0 || editingId.value === el.id) return;
+  activeId.value = el.id;
+  const startX = e.clientX; const startY = e.clientY;
+  const startLeft = parseFloat(el.style.left); const startTop = parseFloat(el.style.top);
+  const canvasW = props.wMM * MM_TO_PX * ZOOM_FACTOR; const canvasH = props.hMM * MM_TO_PX * ZOOM_FACTOR;
+
+  const onMouseMove = (ev: MouseEvent) => {
+    const dx = (ev.clientX - startX) / props.scale; const dy = (ev.clientY - startY) / props.scale;
+    const domNode = document.getElementById(`el-${el.id}`);
+    const elW = domNode ? domNode.offsetWidth : parseFloat(el.style.width) || 50;
+    const elH = domNode ? domNode.offsetHeight : parseFloat(el.style.height) || 50;
+
+    const maxLeft = Math.max(0, canvasW - elW); const maxTop = Math.max(0, canvasH - elH);
+    el.style.left = `${Math.max(0, Math.min(startLeft + dx, maxLeft))}px`; 
+    el.style.top = `${Math.max(0, Math.min(startTop + dy, maxTop))}px`;
+  };
+  const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
+  document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+}
+
+function startResize(e: MouseEvent, el: LabelElement, dir: string) {
+  e.stopPropagation();
+  const startX = e.clientX; const startY = e.clientY;
+  const startW = parseFloat(el.style.width); const startH = parseFloat(el.style.height);
+  const startLeft = parseFloat(el.style.left); const startTop = parseFloat(el.style.top);
+  const ratio = startW / startH;
+
+  const onMouseMove = (ev: MouseEvent) => {
+    const dx = (ev.clientX - startX) / props.scale; const dy = (ev.clientY - startY) / props.scale;
+    let newW = startW; let newH = startH; let newL = startLeft; let newT = startTop;
+
+    if (dir.includes('e')) newW = startW + dx;
+    if (dir.includes('w')) { newW = startW - dx; newL = startLeft + dx; }
+    if (dir.includes('s')) newH = startH + dy;
+    if (dir.includes('n')) { newH = startH - dy; newT = startTop + dy; }
+
+    if (newW < 15) { newW = 15; if (dir.includes('w')) newL = startLeft + startW - 15; }
+    if (newH < 15) { newH = 15; if (dir.includes('n')) newT = startTop + startH - 15; }
+
+    if (['image', 'barcode'].includes(el.type)) {
+       if (dir === 'se' || dir === 'e' || dir === 's') { newH = newW / ratio; } 
+       else if (dir === 'sw' || dir === 'w') { newH = newW / ratio; } 
+       else if (dir === 'ne' || dir === 'n') { newH = newW / ratio; newT = startTop + startH - newH; } 
+       else if (dir === 'nw') { newH = newW / ratio; newT = startTop + startH - newH; }
+    }
+
+    if (el.type === 'line') {
+      const thickPx = 0.2 * MM_TO_PX * ZOOM_FACTOR;
+      if (el.isVertical === 'true') { newW = thickPx; } else { newH = thickPx; }
+    }
+
+    el.style.width = `${newW}px`; el.style.height = `${newH}px`; el.style.left = `${newL}px`; el.style.top = `${newT}px`;
+  };
+  const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
+  document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+}
+</script>
+
+<style scoped>
+@reference "tailwindcss";
+.resizer { @apply absolute w-2.5 h-2.5 bg-[#1677ff] border-[1.5px] border-white rounded-full shadow-md z-[110]; }
+.resizer.nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.resizer.ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.resizer.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.resizer.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.resizer.w { top: calc(50% - 5px); left: -5px; cursor: ew-resize; }
+.resizer.e { top: calc(50% - 5px); right: -5px; cursor: ew-resize; }
+.resizer.n { top: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+.resizer.s { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+</style>

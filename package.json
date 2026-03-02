@@ -1,0 +1,79 @@
+{
+  "name": "easy-label-vue",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "build:app": "vue-tsc -b && vite build && electron-builder",
+    "build:win": "vue-tsc -b && vite build && electron-builder --win --x64 --arm64",
+    "build:mac": "vue-tsc -b && vite build && electron-builder --mac --x64 --arm64",
+    "build:linux": "vue-tsc -b && vite build && electron-builder --linux --x64 --arm64",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "localforage": "^1.10.0",
+    "pdfjs-dist": "4.0.379",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.8",
+    "@types/node": "^20.11.24",
+    "@types/pdfjs-dist": "^2.10.13",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3",
+    "tailwindcss": "^4.0.8",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0",
+    "vite-plugin-electron": "^0.28.2",
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vue-tsc": "^2.2.4"
+  },
+  "build": {
+    "appId": "com.zhlon.easylabel",
+    "productName": "Easy Label",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
