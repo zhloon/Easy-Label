@@ -9,78 +9,82 @@
       </div>
     </div>
 
-    <div v-if="currentView === 'dashboard'" class="max-w-[1300px] mx-auto p-8 h-full flex flex-col">
-      <header class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm mb-8 border border-[#e5e7eb] shrink-0">
-        <h1 class="text-2xl font-extrabold text-[#1f2937] flex items-center gap-2 tracking-wide">
-          <svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
-              <g transform="translate(50,50) rotate(-40) translate(-50,-50)">
-                  <path d="M20,30 h50 a10,10 0 0 1 10,10 v40 a10,10 0 0 1 -10,10 h-50 a10,10 0 0 1 -10,-10 v-40 a10,10 0 0 1 10,-10 z" fill="#1b6Cff"/>
-                  <path d="M55,30 h15 a10,10 0 0 1 10,10 v15 L55,30 z" fill="#ff8a3d"/>
-                  <path d="M55,30 v25 h25 L55,30 z" fill="#1455c0" opacity="0.6"/>
+    <div v-if="currentView === 'dashboard'" class="w-full h-full overflow-y-auto custom-scrollbar">
+      <div class="max-w-[1300px] mx-auto p-8 flex flex-col min-h-full">
+        <header class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm mb-8 border border-[#e5e7eb] shrink-0">
+          <h1 class="text-2xl font-extrabold text-[#1f2937] flex items-center gap-2 tracking-wide">
+            <svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+              <g transform="translate(1, -7)">
+                <g transform="translate(50,50) rotate(-40) translate(-50,-50)">
+                    <path d="M20,30 h50 a10,10 0 0 1 10,10 v40 a10,10 0 0 1 -10,10 h-50 a10,10 0 0 1 -10,-10 v-40 a10,10 0 0 1 10,-10 z" fill="#1b6Cff"/>
+                    <path d="M55,30 h15 a10,10 0 0 1 10,10 v15 L55,30 z" fill="#ff8a3d"/>
+                    <path d="M55,30 v25 h25 L55,30 z" fill="#1455c0" opacity="0.6"/>
+                </g>
+                <path d="M 25 65 L 45 80 L 85 35" fill="none" stroke="#ff8a3d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
               </g>
-              <path d="M 25 65 L 45 80 L 85 35" fill="none" stroke="#ff8a3d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          易标签 <span class="text-sm font-bold text-[#9ca3af] ml-1 tracking-normal">Easy Label</span>
-        </h1>
-        <div class="flex gap-3">
-          <button @click="refreshPage" class="btn btn-outline text-[#6b7280] hover:text-[#1677ff] hover:bg-[#eff6ff]">
-             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg> 刷新
-          </button>
-          <div class="w-px h-5 bg-[#e5e7eb] mt-2 mx-1"></div>
-          <button @click="showImportShareModal = true" class="btn btn-outline text-[#0284c7] bg-[#f0f9ff] hover:bg-[#e0f2fe]">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>提取分享码
-          </button>
-          <button @click="triggerJsonImport" class="btn btn-outline">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>导入本地库
-          </button>
-          <button @click="exportJsonLibrary" class="btn btn-outline">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>导出本地库
-          </button>
-          <input type="file" ref="jsonInputRef" accept=".json" class="hidden" @change="handleJsonImport" />
-        </div>
-      </header>
+            </svg>
+            易标签 <span class="text-sm font-bold text-[#9ca3af] ml-1 tracking-normal">Easy Label</span>
+          </h1>
+          <div class="flex gap-3">
+            <button @click="refreshPage" class="btn btn-outline text-[#6b7280] hover:text-[#1677ff] hover:bg-[#eff6ff]">
+               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg> 刷新
+            </button>
+            <div class="w-px h-5 bg-[#e5e7eb] mt-2 mx-1"></div>
+            <button @click="showImportShareModal = true" class="btn btn-outline text-[#0284c7] bg-[#f0f9ff] hover:bg-[#e0f2fe]">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>提取分享码
+            </button>
+            <button @click="triggerJsonImport" class="btn btn-outline">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>导入本地库
+            </button>
+            <button @click="exportJsonLibrary" class="btn btn-outline">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>导出本地库
+            </button>
+            <input type="file" ref="jsonInputRef" accept=".json" class="hidden" @change="handleJsonImport" />
+          </div>
+        </header>
 
-      <div class="flex justify-between items-center mb-4 border-b-2 border-[#e5e7eb] pb-3 shrink-0">
-        <h2 class="text-[17px] font-extrabold text-[#1f2937] tracking-wide">我的标签库</h2>
-        <button @click="showNewModal = true" class="btn bg-gradient-to-r from-[#1677ff] to-[#3b82f6] text-white px-7 py-3 rounded-xl font-extrabold shadow-[0_6px_20px_rgba(22,119,255,0.3)] hover:shadow-[0_8px_25px_rgba(22,119,255,0.45)] hover:-translate-y-0.5 transform transition-all duration-300 flex items-center gap-2 text-[15px] tracking-wide border-none outline-none">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          新建标签
-        </button>
-      </div>
-
-      <div class="w-full h-[516px] overflow-y-auto custom-scrollbar pr-2 shrink-0">
-        <div v-if="savedLabels.length === 0" class="w-full py-20 flex flex-col items-center text-[#9ca3af] border-2 border-dashed border-[#d1d5db] rounded-2xl bg-white shadow-sm">
-          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-4 text-[#d1d5db]"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <span class="font-medium tracking-widest text-sm">暂无标签，请点击上方“新建标签”开始设计</span>
+        <div class="flex justify-between items-center mb-4 border-b-2 border-[#e5e7eb] pb-3 shrink-0">
+          <h2 class="text-[17px] font-extrabold text-[#1f2937] tracking-wide">我的标签库</h2>
+          <button @click="showNewModal = true" class="btn bg-gradient-to-r from-[#1677ff] to-[#3b82f6] text-white px-7 py-3 rounded-xl font-extrabold shadow-[0_6px_20px_rgba(22,119,255,0.3)] hover:shadow-[0_8px_25px_rgba(22,119,255,0.45)] hover:-translate-y-0.5 transform transition-all duration-300 flex items-center gap-2 text-[15px] tracking-wide border-none outline-none">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            新建标签
+          </button>
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 p-1">
-          <div v-for="label in savedLabels" :key="label.id" class="h-[240px] bg-white border border-[#e5e7eb] rounded-2xl flex flex-col overflow-hidden hover:-translate-y-1.5 hover:border-[#1677ff] hover:shadow-[0_12px_24px_rgba(22,119,255,0.15)] transition-all duration-300 group">
-            <div class="flex-1 cursor-pointer overflow-hidden relative bg-[#f8fafc]" @click="openEditor(label)">
-               <LabelThumbnail :label="label" />
-               <div class="absolute inset-0 bg-[#0000000d] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                 <span class="bg-[#ffffffeb] text-[#1677ff] text-xs font-bold px-4 py-2 rounded-full shadow-md backdrop-blur-sm tracking-widest flex items-center gap-1">
-                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 点击编辑
-                 </span>
-               </div>
-            </div>
-            <div class="p-3 border-t border-[#f3f4f6] bg-white">
-              <div class="font-bold text-[13px] text-center truncate mb-2.5 text-[#374151]" :title="label.name">{{ label.name }}</div>
-              <div class="flex gap-2 justify-between">
-                <button @click.stop="triggerRenameModal(label)" class="flex-1 py-2 bg-[#f1f5f9] hover:bg-[#eff6ff] text-[#6b7280] hover:text-[#1677ff] rounded-lg transition-colors flex justify-center border border-transparent" title="重命名标签"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                <button @click.stop="uploadLabelToCloud(label)" class="flex-1 py-2 bg-[#f1f5f9] hover:bg-[#eff6ff] text-[#6b7280] hover:text-[#0284c7] rounded-lg transition-colors flex justify-center border border-transparent" title="提取云端分享码"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
-                <button @click.stop="triggerDeleteModal(label.id)" class="flex-1 py-2 bg-[#f1f5f9] hover:bg-[#fef2f2] text-[#6b7280] hover:text-[#ff4d4f] rounded-lg transition-colors flex justify-center border border-transparent" title="永久删除标签"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+
+        <div class="w-full flex-1 pb-10">
+          <div v-if="savedLabels.length === 0" class="w-full py-20 flex flex-col items-center text-[#9ca3af] border-2 border-dashed border-[#d1d5db] rounded-2xl bg-white shadow-sm">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-4 text-[#d1d5db]"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span class="font-medium tracking-widest text-sm">暂无标签，请点击上方“新建标签”开始设计</span>
+          </div>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 p-1">
+            <div v-for="label in savedLabels" :key="label.id" class="h-[240px] bg-white border border-[#e5e7eb] rounded-2xl flex flex-col overflow-hidden hover:-translate-y-1.5 hover:border-[#1677ff] hover:shadow-[0_12px_24px_rgba(22,119,255,0.15)] transition-all duration-300 group">
+              <div class="flex-1 cursor-pointer overflow-hidden relative bg-[#f8fafc]" @click="openEditor(label)">
+                 <LabelThumbnail :label="label" />
+                 <div class="absolute inset-0 bg-[#0000000d] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                   <span class="bg-[#ffffffeb] text-[#1677ff] text-xs font-bold px-4 py-2 rounded-full shadow-md backdrop-blur-sm tracking-widest flex items-center gap-1">
+                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> 点击编辑
+                   </span>
+                 </div>
+              </div>
+              <div class="p-3 border-t border-[#f3f4f6] bg-white">
+                <div class="font-bold text-[13px] text-center truncate mb-2.5 text-[#374151]" :title="label.name">{{ label.name }}</div>
+                <div class="flex gap-2 justify-between">
+                  <button @click.stop="triggerRenameModal(label)" class="flex-1 py-2 bg-[#f1f5f9] hover:bg-[#eff6ff] text-[#6b7280] hover:text-[#1677ff] rounded-lg transition-colors flex justify-center border border-transparent" title="重命名标签"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                  <button @click.stop="uploadLabelToCloud(label)" class="flex-1 py-2 bg-[#f1f5f9] hover:bg-[#eff6ff] text-[#6b7280] hover:text-[#0284c7] rounded-lg transition-colors flex justify-center border border-transparent" title="提取云端分享码"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
+                  <button @click.stop="triggerDeleteModal(label.id)" class="flex-1 py-2 bg-[#f1f5f9] hover:bg-[#fef2f2] text-[#6b7280] hover:text-[#ff4d4f] rounded-lg transition-colors flex justify-center border border-transparent" title="永久删除标签"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex justify-between items-center mt-10 mb-4 border-b-2 border-[#e5e7eb] pb-3 shrink-0">
-        <h2 class="text-[17px] font-extrabold text-[#1f2937] tracking-wide">模板库</h2>
-      </div>
-      <div class="w-full py-12 flex flex-col items-center text-[#9ca3af] border-2 border-dashed border-[#d1d5db] rounded-2xl bg-white shadow-sm shrink-0">
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-3"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-        <span class="font-medium tracking-widest text-sm">模板库正在建设中...</span>
+        <div class="flex justify-between items-center mt-auto mb-4 border-b-2 border-[#e5e7eb] pb-3 shrink-0">
+          <h2 class="text-[17px] font-extrabold text-[#1f2937] tracking-wide">模板库</h2>
+        </div>
+        <div class="w-full py-12 flex flex-col items-center text-[#9ca3af] border-2 border-dashed border-[#d1d5db] rounded-2xl bg-white shadow-sm shrink-0 mb-8">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-3"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          <span class="font-medium tracking-widest text-sm">模板库正在建设中...</span>
+        </div>
       </div>
     </div>
 
@@ -90,12 +94,14 @@
         <header class="h-[68px] flex items-center justify-between px-6 bg-white border-b border-[#e5e7eb] shrink-0 z-[110]">
           <div class="flex items-center gap-2 bg-[#f1f5f9] border border-[#e5e7eb] rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-[#dbeafe] transition-shadow w-80">
             <svg viewBox="0 0 100 100" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+              <g transform="translate(1, -7)">
                 <g transform="translate(50,50) rotate(-40) translate(-50,-50)">
                     <path d="M20,30 h50 a10,10 0 0 1 10,10 v40 a10,10 0 0 1 -10,10 h-50 a10,10 0 0 1 -10,-10 v-40 a10,10 0 0 1 10,-10 z" fill="#1b6Cff"/>
                     <path d="M55,30 h15 a10,10 0 0 1 10,10 v15 L55,30 z" fill="#ff8a3d"/>
                     <path d="M55,30 v25 h25 L55,30 z" fill="#1455c0" opacity="0.6"/>
                 </g>
                 <path d="M 25 65 L 45 80 L 85 35" fill="none" stroke="#ff8a3d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
             </svg>
             <input v-model="currentLabel.name" class="flex-1 text-[15px] font-bold bg-transparent outline-none text-[#1f2937] placeholder-[#9ca3af]" placeholder="未命名标签" />
           </div>
@@ -181,7 +187,7 @@
               v-model:activeId="activeElementId"
               :wMM="currentLabel.wMM"
               :hMM="currentLabel.hMM"
-              :scale="canvasScale"
+              v-model:scale="canvasScale"
             />
             
           </main>
@@ -358,9 +364,9 @@ import { exportSinglePDF, exportBatchPDF } from './utils/pdfExport';
 import { cropImageWhitespace } from './utils/imageCrop';
 import type { LabelData } from './types';
 
-const API_BASE_URL = 'https://api.easylabel.cloud/api/share'; // 您可修改为您的正式 API 地址
+const API_BASE_URL = 'https://easylabel.cloud/api/share'; 
 const MM_TO_PX = 3.78; 
-const ZOOM_FACTOR = 2;
+const ZOOM_FACTOR = 2; 
 
 const currentView = ref<'dashboard' | 'editor'>('dashboard');
 const showEditor = computed({ get: () => currentView.value === 'editor', set: (v) => currentView.value = v ? 'editor' : 'dashboard' });
@@ -368,8 +374,9 @@ const showEditor = computed({ get: () => currentView.value === 'editor', set: (v
 const savedLabels = ref<LabelData[]>([]);
 const currentLabel = ref<LabelData>({ id: '', name: '', wMM: 100, hMM: 100, elements: [] });
 const activeElementId = ref<string | null>(null);
+const activeElement = computed(() => currentLabel.value.elements.find(el => el.id === activeElementId.value));
 const canvasScale = ref(1);
-let elementZIndex = 10;
+let elementZIndex = 10; 
 
 const isLoading = ref(false);
 const loadingText = ref('处理中...');
@@ -378,6 +385,7 @@ const loadingProgress = ref<number | null>(null);
 const showSaveModal = ref(false);
 const saveActionType = ref<'save' | 'saveAs' | 'rename'>('save');
 const saveLabelName = ref('');
+
 const showDeleteModal = ref(false);
 const deleteTargetId = ref('');
 
@@ -387,7 +395,6 @@ const showCustomBarcodeModal = ref(false);
 const showImportShareModal = ref(false);
 const showShareResultModal = ref(false);
 
-// ★ 新增：错误弹窗相关的状态变量
 const showErrorModal = ref(false);
 const errorMessage = ref('');
 
@@ -405,14 +412,12 @@ const jsonInputRef = ref<HTMLInputElement | null>(null);
 const imageInputRef = ref<HTMLInputElement | null>(null);
 const pdfInputRef = ref<HTMLInputElement | null>(null);
 
-const activeElement = computed(() => currentLabel.value.elements.find(el => el.id === activeElementId.value));
-
 onMounted(async () => {
   await reloadGallery();
   document.addEventListener('keydown', handleGlobalKeydown);
   window.addEventListener('resize', autoFitCanvas);
   
-  (window as any).showToast = function(message: string, type = 'info') {
+  (window as any).showToast = function(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
@@ -431,10 +436,34 @@ onMounted(async () => {
   };
 });
 
-onUnmounted(() => { document.removeEventListener('keydown', handleGlobalKeydown); window.removeEventListener('resize', autoFitCanvas); });
+onUnmounted(() => { 
+  document.removeEventListener('keydown', handleGlobalKeydown); 
+  window.removeEventListener('resize', autoFitCanvas); 
+});
 
 function showToast(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') { 
   if ((window as any).showToast) (window as any).showToast(message, type); 
+}
+
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if (currentView.value !== 'editor' || !activeElement.value) return;
+  const tag = (e.target as HTMLElement).tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
+  
+  if (e.key === 'Delete' || e.key === 'Backspace') { deleteActive(); e.preventDefault(); return; }
+  
+  const stepPx = e.shiftKey ? 10 : 1; 
+  let left = parseFloat(activeElement.value.style.left); 
+  let top = parseFloat(activeElement.value.style.top); 
+  let moved = false;
+  
+  switch(e.key) { 
+    case 'ArrowUp': top -= stepPx; moved = true; break; 
+    case 'ArrowDown': top += stepPx; moved = true; break; 
+    case 'ArrowLeft': left -= stepPx; moved = true; break; 
+    case 'ArrowRight': left += stepPx; moved = true; break; 
+  }
+  if (moved) { e.preventDefault(); activeElement.value.style.left = `${Math.max(0, left)}px`; activeElement.value.style.top = `${Math.max(0, top)}px`; }
 }
 
 function autoFitCanvas() {
@@ -451,17 +480,21 @@ function autoFitCanvas() {
   }, 50);
 }
 
-function handleGlobalKeydown(e: KeyboardEvent) {
-  if (currentView.value !== 'editor' || !activeElement.value) return;
-  const tag = (e.target as HTMLElement).tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
-  if (e.key === 'Delete' || e.key === 'Backspace') { deleteActive(); e.preventDefault(); return; }
-  const stepPx = e.shiftKey ? 10 : 1; 
-  let left = parseFloat(activeElement.value.style.left); let top = parseFloat(activeElement.value.style.top); let moved = false;
-  switch(e.key) { case 'ArrowUp': top -= stepPx; moved = true; break; case 'ArrowDown': top += stepPx; moved = true; break; case 'ArrowLeft': left -= stepPx; moved = true; break; case 'ArrowRight': left += stepPx; moved = true; break; }
-  if (moved) { e.preventDefault(); activeElement.value.style.left = `${Math.max(0, left)}px`; activeElement.value.style.top = `${Math.max(0, top)}px`; }
+function getBarcodeDefaultStyle(hMM: number) {
+  const wPx = 70 * MM_TO_PX * ZOOM_FACTOR; const hPx = 20 * MM_TO_PX * ZOOM_FACTOR; const canvasHPx = hMM * MM_TO_PX * ZOOM_FACTOR; const topPx = Math.max(0, canvasHPx - hPx);
+  return { width: `${wPx}px`, height: `${hPx}px`, left: '0px', top: `${topPx}px`, zIndex: 10 };
 }
 
+function openEditor(label: LabelData | null) {
+  if (label) { 
+    currentLabel.value = JSON.parse(JSON.stringify(label)); 
+    const maxZ = Math.max(0, ...currentLabel.value.elements.map(el => Number(el.style.zIndex) || 0)); 
+    elementZIndex = maxZ + 10; 
+  }
+  activeElementId.value = null; showEditor.value = true; autoFitCanvas();
+}
+
+function closeEditor() { activeElementId.value = null; showEditor.value = false; reloadGallery(); }
 function refreshPage() { window.location.reload(); }
 
 async function reloadGallery() {
@@ -471,45 +504,10 @@ async function reloadGallery() {
   isLoading.value = false;
 }
 
-function getBarcodeDefaultStyle(hMM: number) {
-  const wPx = 70 * MM_TO_PX * ZOOM_FACTOR; const hPx = 20 * MM_TO_PX * ZOOM_FACTOR; const canvasHPx = hMM * MM_TO_PX * ZOOM_FACTOR; const topPx = Math.max(0, canvasHPx - hPx);
-  return { width: `${wPx}px`, height: `${hPx}px`, left: '0px', top: `${topPx}px`, zIndex: 10 };
-}
-
-function openEditor(label: LabelData | null) {
-  if (label) { currentLabel.value = JSON.parse(JSON.stringify(label)); const maxZ = Math.max(0, ...currentLabel.value.elements.map(el => Number(el.style.zIndex) || 0)); elementZIndex = maxZ + 10; }
-  activeElementId.value = null; showEditor.value = true; autoFitCanvas();
-}
-
-function confirmNewCanvas() {
-  if (!newW.value || !newH.value) return showToast('请输入完整尺寸', 'warning');
-  currentLabel.value = { id: Date.now().toString(), name: '新建标签', wMM: newW.value, hMM: newH.value, elements: [] };
-  if (newW.value >= 70 && newH.value >= 20) { currentLabel.value.elements.push({ id: Date.now().toString() + '_bc', type: 'barcode', style: getBarcodeDefaultStyle(newH.value) }); }
-  showNewModal.value = false; openEditor(null); 
-}
-
-function openResizeModal() { tempResizeW.value = currentLabel.value.wMM; tempResizeH.value = currentLabel.value.hMM; showResizeModal.value = true; }
-function confirmResize() {
-  if (!tempResizeW.value || !tempResizeH.value) return showToast('请输入完整尺寸', 'warning');
-  currentLabel.value.wMM = tempResizeW.value; currentLabel.value.hMM = tempResizeH.value;
-  showResizeModal.value = false; autoFitCanvas(); showToast('尺寸已修改生效', 'success');
-}
-
-function triggerRenameModal(label: LabelData) { 
-  saveLabelName.value = label.name; 
-  saveActionType.value = 'rename'; 
-  currentLabel.value = JSON.parse(JSON.stringify(label)); 
-  showSaveModal.value = true; 
-}
-
-function triggerDeleteModal(id: string) { deleteTargetId.value = id; showDeleteModal.value = true; }
-async function confirmDeleteLabel() { await deleteLabel(deleteTargetId.value); await reloadGallery(); showDeleteModal.value = false; showToast('已永久删除', 'success'); }
-
 function triggerSaveModal(type: 'save' | 'saveAs') {
   saveActionType.value = type;
   if (type === 'save' && currentLabel.value.name !== '新建标签' && currentLabel.value.name.trim() !== '') { 
-    confirmSaveLabel(true); 
-    return; 
+    confirmSaveLabel(true); return; 
   }
   saveLabelName.value = type === 'saveAs' ? (currentLabel.value.name === '新建标签' ? '未命名标签' : currentLabel.value.name) + ' - 副本' : (currentLabel.value.name === '新建标签' ? '未命名标签' : currentLabel.value.name);
   showSaveModal.value = true;
@@ -529,14 +527,71 @@ async function confirmSaveLabel(directSave = false) {
       if (!directSave) currentLabel.value.name = saveLabelName.value.trim(); 
       await saveLabel(JSON.parse(JSON.stringify(currentLabel.value))); showToast('保存成功', 'success');
     }
-    await reloadGallery(); 
-    showEditor.value = false; 
+    await reloadGallery(); showEditor.value = false; 
   } catch(e) {
     showToast('保存失败', 'error');
   } finally {
     isLoading.value = false; 
   }
 }
+
+async function uploadLabelToCloud(labelData: LabelData) {
+  isLoading.value = true; loadingText.value = '生成云端分享码...';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); 
+  try {
+    const response = await fetch(API_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(labelData), signal: controller.signal });
+    const result = await response.json(); 
+    if(!response.ok) throw new Error(result.error); 
+    displayShareCode.value = result.shareCode; showShareResultModal.value = true;
+    try { await navigator.clipboard.writeText(result.shareCode); } catch(e){}
+  } catch (e: any) { 
+    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast('网络请求失败', 'error'); }
+  } finally { clearTimeout(timeoutId); isLoading.value = false; }
+}
+
+async function downloadLabelFromCloud() {
+  if (inputShareCode.value.length !== 6) return showToast('请输入完整的6位分享码', 'warning');
+  isLoading.value = true; loadingText.value = '云端检索中...';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${API_BASE_URL}/${inputShareCode.value.toUpperCase()}`, { signal: controller.signal });
+    const result = await response.json(); 
+    if (!response.ok) throw new Error(result.error || '分享码无效'); 
+    
+    const labelData = result.labelData as LabelData;
+    labelData.id = Date.now().toString(); 
+    let baseName = labelData.name.replace(/ \(分享\d*\)$/, ''); 
+    let finalName = baseName; let counter = 1;
+    while (savedLabels.value.some(l => l.name === finalName)) { finalName = `${baseName} (分享${counter})`; counter++; }
+    labelData.name = finalName;
+    
+    await saveLabel(labelData); await reloadGallery();
+    showImportShareModal.value = false; inputShareCode.value = '';
+    showToast('提取成功！已存入本地库', 'success');
+  } catch(e: any) { 
+    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast(e.message || '提取失败', 'error'); }
+  } finally { clearTimeout(timeoutId); isLoading.value = false; }
+}
+
+function confirmNewCanvas() {
+  if (!newW.value || !newH.value) return showToast('请输入完整尺寸', 'warning');
+  currentLabel.value = { id: Date.now().toString(), name: '新建标签', wMM: newW.value, hMM: newH.value, elements: [] };
+  if (newW.value >= 70 && newH.value >= 20) { currentLabel.value.elements.push({ id: Date.now().toString() + '_bc', type: 'barcode', style: getBarcodeDefaultStyle(newH.value) }); }
+  showNewModal.value = false; openEditor(null); 
+}
+
+function openResizeModal() { tempResizeW.value = currentLabel.value.wMM; tempResizeH.value = currentLabel.value.hMM; showResizeModal.value = true; }
+function confirmResize() {
+  if (!tempResizeW.value || !tempResizeH.value) return showToast('请输入完整尺寸', 'warning');
+  currentLabel.value.wMM = tempResizeW.value; currentLabel.value.hMM = tempResizeH.value;
+  showResizeModal.value = false; autoFitCanvas(); showToast('尺寸已修改生效', 'success');
+}
+
+function triggerRenameModal(label: LabelData) { saveLabelName.value = label.name; saveActionType.value = 'rename'; currentLabel.value = JSON.parse(JSON.stringify(label)); showSaveModal.value = true; }
+function triggerDeleteModal(id: string) { deleteTargetId.value = id; showDeleteModal.value = true; }
+async function confirmDeleteLabel() { await deleteLabel(deleteTargetId.value); await reloadGallery(); showDeleteModal.value = false; showToast('已永久删除', 'success'); }
 
 async function handleSidebarClickAdd(payload: any) {
   let finalImgUrl = payload.imgUrl;
@@ -556,25 +611,9 @@ async function handleSidebarClickAdd(payload: any) {
   });
 }
 
-function triggerJsonImport() { jsonInputRef.value?.click(); }
-function handleJsonImport(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async (ev) => {
-    try { const data = JSON.parse(ev.target?.result as string); if (Array.isArray(data)) { isLoading.value = true; loadingText.value = '恢复数据中...'; await clearAndImportDB(data); await reloadGallery(); showToast('导入成功', 'success'); } } catch(err) { showToast('文件格式错误！', 'error'); } finally { if (jsonInputRef.value) jsonInputRef.value.value = ''; }
-  };
-  reader.readAsText(file);
-}
-async function exportJsonLibrary() {
-  if (savedLabels.value.length === 0) return showToast('没有数据可导出', 'warning');
-  isLoading.value = true; loadingText.value = '打包数据中...';
-  const fullData = await getAllLabels(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullData)); const a = document.createElement('a'); a.href = dataStr; a.download = "易标签_本地库备份.json"; a.click();
-  isLoading.value = false; showToast('导出成功', 'success');
-}
-
-function closeEditor() { activeElementId.value = null; showEditor.value = false; reloadGallery(); }
-
+function deleteActive() { if (activeElementId.value) { currentLabel.value.elements = currentLabel.value.elements.filter(el => el.id !== activeElementId.value); activeElementId.value = null; } }
 function addText() { currentLabel.value.elements.push({ id: Date.now().toString(), type: 'text', content: '双击修改文本', fontSize: '24px', fontWeight: 'normal', style: { width: '200px', height: 'auto', left: '20px', top: '20px', zIndex: elementZIndex++ } }); }
+function addLine() { currentLabel.value.elements.push({ id: Date.now().toString(), type: 'line', isVertical: 'false', style: { width: '150px', height: `${0.2 * MM_TO_PX * ZOOM_FACTOR}px`, left: '20px', top: '20px', zIndex: elementZIndex++ } }); }
 function resetBarcode() { const barcode = currentLabel.value.elements.find(el => el.type === 'barcode'); if (barcode) barcode.style = getBarcodeDefaultStyle(currentLabel.value.hMM); else currentLabel.value.elements.push({ id: Date.now().toString(), type: 'barcode', style: getBarcodeDefaultStyle(currentLabel.value.hMM) }); }
 function confirmCustomBarcode() {
   if (!customBarcodeW.value || !customBarcodeH.value) return showToast('请输入完整尺寸', 'warning');
@@ -582,7 +621,6 @@ function confirmCustomBarcode() {
   currentLabel.value.elements.push({ id: Date.now().toString(), type: 'barcode', style: { width: `${wPx}px`, height: `${hPx}px`, left: '10px', top: '10px', zIndex: elementZIndex++ } });
   showCustomBarcodeModal.value = false;
 }
-function addLine() { currentLabel.value.elements.push({ id: Date.now().toString(), type: 'line', isVertical: 'false', style: { width: '150px', height: `${0.2 * MM_TO_PX * ZOOM_FACTOR}px`, left: '20px', top: '20px', zIndex: elementZIndex++ } }); }
 
 function triggerImageUpload() { imageInputRef.value?.click(); }
 function handleImageUpload(e: Event) {
@@ -598,18 +636,22 @@ function handleImageUpload(e: Event) {
   reader.readAsDataURL(file);
 }
 
-function deleteActive() { if (activeElementId.value) { currentLabel.value.elements = currentLabel.value.elements.filter(el => el.id !== activeElementId.value); activeElementId.value = null; } }
-
 function changeFontSize(delta: number) { if(activeElement.value && activeElement.value.type === 'text') { let currentSize = parseInt(activeElement.value.fontSize || '24'); activeElement.value.fontSize = `${Math.max(10, currentSize + delta * 2)}px`; } }
 function toggleBold() { if(activeElement.value && activeElement.value.type === 'text') { activeElement.value.fontWeight = activeElement.value.fontWeight === 'bold' ? 'normal' : 'bold'; } }
-
+function rotateLine() {
+  if(activeElement.value && activeElement.value.type === 'line') {
+    const isVert = activeElement.value.isVertical === 'true';
+    const oldW = activeElement.value.style.width; const oldH = activeElement.value.style.height;
+    activeElement.value.style.width = oldH; activeElement.value.style.height = oldW;
+    activeElement.value.isVertical = isVert ? 'false' : 'true';
+  }
+}
 const linePhysicalLength = computed(() => {
   if (!activeElement.value || activeElement.value.type !== 'line') return 0;
   const isVert = activeElement.value.isVertical === 'true';
   const px = parseFloat(isVert ? activeElement.value.style.height : activeElement.value.style.width);
   return Math.round(px / (MM_TO_PX * ZOOM_FACTOR));
 });
-
 function updateLineLength(e: Event) {
    const val = parseFloat((e.target as HTMLInputElement).value);
    if (val && activeElement.value) {
@@ -618,13 +660,20 @@ function updateLineLength(e: Event) {
    }
 }
 
-function rotateLine() {
-  if(activeElement.value && activeElement.value.type === 'line') {
-    const isVert = activeElement.value.isVertical === 'true';
-    const oldW = activeElement.value.style.width; const oldH = activeElement.value.style.height;
-    activeElement.value.style.width = oldH; activeElement.value.style.height = oldW;
-    activeElement.value.isVertical = isVert ? 'false' : 'true';
-  }
+function triggerJsonImport() { jsonInputRef.value?.click(); }
+function handleJsonImport(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try { const data = JSON.parse(ev.target?.result as string); if (Array.isArray(data)) { isLoading.value = true; loadingText.value = '恢复数据中...'; await clearAndImportDB(data); await reloadGallery(); showToast('导入成功', 'success'); } } catch(err) { showToast('文件格式错误！', 'error'); } finally { if (jsonInputRef.value) jsonInputRef.value.value = ''; }
+  };
+  reader.readAsText(file);
+}
+async function exportJsonLibrary() {
+  if (savedLabels.value.length === 0) return showToast('没有数据可导出', 'warning');
+  isLoading.value = true; loadingText.value = '打包数据中...';
+  const fullData = await getAllLabels(); const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullData)); const a = document.createElement('a'); a.href = dataStr; a.download = "易标签_本地库备份.json"; a.click();
+  isLoading.value = false; showToast('导出成功', 'success');
 }
 
 async function doExportPDF() {
@@ -662,8 +711,7 @@ async function handleBatchPDF(e: Event) {
         showToast('合成完成！', 'success');
       }
     } catch(err: any) { 
-      // ★ 核心改动：抛弃 window.alert，唤起我们自定义的美化版系统阻断弹窗
-      errorMessage.value = '请检查文件是否为条码';
+      errorMessage.value = err.message || '请检查文件是否为条码';
       showErrorModal.value = true;
     } finally { 
       isLoading.value = false; 
@@ -671,44 +719,6 @@ async function handleBatchPDF(e: Event) {
       if (pdfInputRef.value) pdfInputRef.value.value = ''; 
     }
   }, 150);
-}
-
-async function uploadLabelToCloud(labelData: LabelData) {
-  isLoading.value = true; loadingText.value = '生成云端分享码...';
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); 
-  try {
-    const response = await fetch(API_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(labelData), signal: controller.signal });
-    const result = await response.json(); 
-    if(!response.ok) throw new Error(result.error); 
-    displayShareCode.value = result.shareCode; showShareResultModal.value = true;
-    try { await navigator.clipboard.writeText(result.shareCode); } catch(e){}
-  } catch (e: any) { 
-    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast('网络请求失败', 'error'); }
-  } finally { clearTimeout(timeoutId); isLoading.value = false; }
-}
-
-async function downloadLabelFromCloud() {
-  if (inputShareCode.value.length !== 6) return showToast('请输入完整的6位分享码', 'warning');
-  isLoading.value = true; loadingText.value = '云端检索中...';
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
-  try {
-    const response = await fetch(`${API_BASE_URL}/${inputShareCode.value.toUpperCase()}`, { signal: controller.signal });
-    const result = await response.json(); 
-    if (!response.ok) throw new Error(result.error || '分享码无效'); 
-    const labelData = result.labelData as LabelData;
-    labelData.id = Date.now().toString(); 
-    let baseName = labelData.name.replace(/ \(分享\d*\)$/, ''); 
-    let finalName = baseName; let counter = 1;
-    while (savedLabels.value.some(l => l.name === finalName)) { finalName = `${baseName} (分享${counter})`; counter++; }
-    labelData.name = finalName;
-    await saveLabel(labelData); await reloadGallery();
-    showImportShareModal.value = false; inputShareCode.value = '';
-    showToast('提取成功！已存入本地库', 'success');
-  } catch(e: any) { 
-    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast(e.message || '提取失败', 'error'); }
-  } finally { clearTimeout(timeoutId); isLoading.value = false; }
 }
 </script>
 
