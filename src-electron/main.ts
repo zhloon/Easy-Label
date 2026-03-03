@@ -80,3 +80,6 @@ ipcMain.handle('unbind-license', async (event, key: string) => {
     return { error: '网络连接失败，请检查网络后重试' };
   }
 });
+ipcMain.handle('get-device-id', () => {
+  return generateHardDeviceId();
+});
