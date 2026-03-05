@@ -1,5 +1,93 @@
 @import "tailwindcss";
 
+/* ==========================================
+   🌟 第一部分：企业级 SaaS 全局主题变量配置
+   ========================================== */
+@theme {
+  /* 1. 品牌主色系 */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #1677ff; /* 核心主色 */
+  --color-primary-700: #0f5ee6; /* 按下状态 */
+
+  /* 2. 中性色系 (冷灰 Slate，提升高级感) */
+  --color-slate-50: #f8fafc;  /* 极致浅的底层背景 */
+  --color-slate-100: #f1f5f9; /* 次级背景/悬浮背景 */
+  --color-slate-200: #e2e8f0; /* 全局默认边框 */
+  --color-slate-300: #cbd5e1; /* 强调边框 */
+  --color-slate-400: #94a3b8; /* 禁用态文本 */
+  --color-slate-500: #64748b; /* 辅助/次要文本 */
+  --color-slate-700: #334155; /* 常规正文 */
+  --color-slate-900: #0f172a; /* 核心标题/强调用色 */
+
+  /* 3. 功能语义色系 */
+  --color-success-bg: #d1fae5;
+  --color-success: #10b981;
+  
+  --color-warning-bg: #fef3c7;
+  --color-warning: #f59e0b;
+  
+  --color-danger-bg: #ffe4e6;
+  --color-danger: #f43f5e;
+}
+
+/* ==========================================
+   🌟 第二部分：全局样式重置
+   ========================================== */
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-700 antialiased font-sans selection:bg-primary-100 selection:text-primary-700;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-slate-900;
+  }
+}
+
+/* ==========================================
+   🌟 第三部分：企业级通用组件级样式抽离
+   ========================================== */
+@layer components {
+  /* 按钮基类 */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-all duration-200 cursor-pointer outline-none select-none whitespace-nowrap active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+  
+  /* 主要按钮 (实心蓝) */
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-500 shadow-sm hover:shadow-md border border-transparent;
+  }
+
+  /* 轮廓按钮 (空心边框) */
+  .btn-outline {
+    @apply bg-white border border-slate-200 text-slate-700 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 shadow-sm;
+  }
+
+  /* 次级/轻量按钮 (无边框灰底) */
+  .btn-subtle {
+    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-transparent;
+  }
+
+  /* 危险操作按钮 */
+  .btn-danger {
+    @apply bg-white border border-transparent text-danger hover:bg-danger-bg hover:text-danger;
+  }
+
+  /* 现代卡片样式 */
+  .card-panel {
+    @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300;
+  }
+
+  /* 输入框统一样式 */
+  .input-field {
+    @apply bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none text-slate-900 transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-50 placeholder:text-slate-400;
+  }
+}
+
+/* ==========================================
+   🌟 第四部分：您原本的画布背景和滚动条样式
+   ========================================== */
 @layer utilities {
   .canvas-bg {
     background-image: radial-gradient(#d1d5db 1px, transparent 1px);
@@ -8,9 +96,16 @@
   
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
     border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
   }
 }

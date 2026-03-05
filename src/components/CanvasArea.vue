@@ -1,9 +1,11 @@
 <template>
   <div class="flex-1 overflow-auto relative canvas-bg bg-[#f3f4f6]" id="workspace-container" @mousedown="clearActive"
     @dragover.prevent @dragenter.prevent @drop.prevent="handleDrop">
-    <div class="w-fit h-fit min-w-full min-h-full flex items-center justify-center p-[100px]">
-      <div id="canvasSizer" class="relative shrink-0 transition-all duration-150"
+    <div class="min-w-full min-h-full flex p-10">
+      
+      <div id="canvasSizer" class="relative shrink-0 transition-all duration-150 m-auto"
         :style="{ width: `${wMM * MM_TO_PX * ZOOM_FACTOR * scale}px`, height: `${hMM * MM_TO_PX * ZOOM_FACTOR * scale}px` }">
+        
         <div id="canvasWrapper" class="absolute top-0 left-0 origin-top-left transition-transform duration-150"
           :style="{ transform: `scale(${scale})` }">
 
@@ -46,14 +48,10 @@
                   <div v-if="el.type === 'text'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
                 </template>
                 <template v-else-if="el.type === 'line'">
-                  <div v-if="el.isVertical === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')">
-                  </div>
-                  <div v-if="el.isVertical === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')">
-                  </div>
-                  <div v-if="el.isVertical === 'false'" class="resizer w"
-                    @mousedown.stop="startResize($event, el, 'w')"></div>
-                  <div v-if="el.isVertical === 'false'" class="resizer e"
-                    @mousedown.stop="startResize($event, el, 'e')"></div>
+                  <div v-if="el.isVertical === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
+                  <div v-if="el.isVertical === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
+                  <div v-if="el.isVertical === 'false'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
+                  <div v-if="el.isVertical === 'false'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
                 </template>
               </div>
             </div>

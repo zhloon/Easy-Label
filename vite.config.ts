@@ -18,7 +18,19 @@ export default defineConfig({
     ]),
     
     renderer(),
+    
   ],
+  server: {
+    // 🌟 添加 proxy 代理配置
+    proxy: {
+      '/api': {
+        // 👇 将这里替换为您刚部署好的 Cloudflare Worker 的真实域名！
+        target: 'https://easylabel.cloud', 
+        changeOrigin: true, // 允许跨域
+        secure: false       // 如果是 https 建议设为 false
+      }
+    }
+  },
   
   // ★ 修复点 1：允许本地开发依赖预构建时，支持顶级 await
   optimizeDeps: {
