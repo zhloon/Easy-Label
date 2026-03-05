@@ -1,14 +1,49 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
-import { generateHardDeviceId } from './hardwareId'; // 引入硬件ID生成器
+import axios from 'axios'; // 🌟 引入 axios
+import { generateHardDeviceId } from './hardwareId'; 
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 let mainWindow: BrowserWindow | null = null;
+
+// 🌟 智能获取静态资源路径 (兼容开发环境和打包后的生产环境)
+const publicPath = process.env.VITE_DEV_SERVER_URL
+  ? path.join(__dirname, '../public')
+  : path.join(__dirname, '../dist');
+// ==========================================
+// 🌟 【主进程】统一 Axios 网络请求配置
+// ==========================================
+const apiClient = axios.create({
+  baseURL: 'https://easylabel.cloud', // 统一为您真实的正式版云端域名
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// 主进程全局响应拦截
+apiClient.interceptors.response.use(
+  (res) => {
+    // 防止网络被劫持或 Cloudflare 弹出验证页
+    if (typeof res.data === 'string') {
+      return { success: false, error: '服务器返回格式异常，请检查网络' };
+    }
+    return res.data;
+  },
+  (error) => {
+    console.error('❌ [Main API Error]:', error.message);
+    // 🌟 核心：直接 resolve 错误对象给前端 IPC，防止底层直接抛红字奔溃
+    return Promise.resolve({ 
+      success: false, 
+      error: error.response?.data?.error || '网络连接失败，请检查网络并重试' 
+    });
+  }
+);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    // 🌟 1. 运行时窗口图标：Windows 用 ico，macOS/Linux 用 png
+    icon: path.join(publicPath, process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -21,7 +56,6 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  // 在开发环境下自动打开控制台，方便排查报错和网络请求
   if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
     mainWindow.webContents.openDevTools();
   }
@@ -44,80 +78,33 @@ app.on('window-all-closed', () => {
 
 // 1. 监听：卡密登录验证
 ipcMain.handle('verify-license', async (event, key: string) => {
-  try {
-    const deviceId = generateHardDeviceId();
-    console.log('✅ 底层设备 ID 生成成功:', deviceId);
-
-    // ⚠️ 重点 1：请务必确保下面这个地址是您真实的 Cloudflare Worker 域名！
-    // 如果您还在用我写的假地址 api.easylabel.cloud，这里一定会请求失败。
-    const apiUrl = 'https://api.easylabel.cloud/verify'; 
-    console.log('👉 正在请求云端:', apiUrl);
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, deviceId })
-    });
-
-    console.log('☁️ HTTP 状态码:', response.status);
-
-    // ⚠️ 重点 2：不要直接 .json()，我们先把它当作纯文本拿出来看！
-    // 这样即使 Cloudflare 报错拦截了，我们也能看到完整的报错网页内容
-    const rawText = await response.text();
-    console.log('📦 云端返回的原始数据:', rawText);
-
-    // 尝试将返回的数据解析为 JSON
-    const result = JSON.parse(rawText);
-    return result;
-
-  } catch (error: any) {
-    console.error('❌ 底层请求彻底崩溃:', error);
-    // 把真实的报错原因返回给前端
-    return { error: '网络或解析异常: ' + error.message };
-  }
+  const deviceId = generateHardDeviceId();
+  console.log(`👉 [API] 正在验证设备: ${deviceId}`);
+  // 🌟 代码极度清爽：一行代码发起请求，拦截器自动处理返回和错误
+  return await apiClient.post('/api/verify', { key, deviceId });
 });
 
 // 2. 监听：设备解绑 / 换机
 ipcMain.handle('unbind-license', async (event, key: string) => {
-  try {
-    const deviceId = generateHardDeviceId();
-
-    const response = await fetch('https://api.easylabel.cloud/unbind', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, deviceId })
-    });
-
-    const result = await response.json();
-    return result;
-  } catch (error: any) {
-    console.error('卡密解绑网络错误:', error);
-    return { error: '网络连接失败，请检查网络后重试' };
-  }
+  const deviceId = generateHardDeviceId();
+  console.log(`👉 [API] 正在申请解绑设备: ${deviceId}`);
+  return await apiClient.post('/api/unbind', { key, deviceId });
 });
 
 // 3. 监听：获取设备ID
-ipcMain.handle('get-device-id', () => {
-  return generateHardDeviceId();
-});
+ipcMain.handle('get-device-id', () => generateHardDeviceId());
 
 // 4. 监听：纯设备码静默登录 (无需前端提供卡密)
 ipcMain.handle('auto-login', async () => {
-  try {
-    const deviceId = generateHardDeviceId();
-    
-    // 注意：替换为您真实的 API 地址
-    const response = await fetch('https://api.easylabel.cloud/auto-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId })
-    });
-
-    const result = await response.json();
-    return result;
-
-  } catch (error: any) {
-    console.error('自动登录网络错误:', error);
-    return { error: '网络连接失败，请检查网络后重试' };
-  }
+  const deviceId = generateHardDeviceId();
+  console.log(`👉 [API] 正在静默登录设备: ${deviceId}`);
+  return await apiClient.post('/api/auto-login', { deviceId });
+});
+// ==========================================
+// 🌟 新增：角标 (Badge) 控制 IPC 接口
+// ==========================================
+ipcMain.handle('set-badge', (event, count: number) => {
+  // 设置任务栏/Dock栏的数字角标 (传入 0 会自动隐藏角标)
+  app.setBadgeCount(count);
+  return { success: true };
 });

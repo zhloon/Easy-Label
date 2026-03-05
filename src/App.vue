@@ -52,7 +52,7 @@
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
             </div>
-            <input v-model="inputKey" @keyup.enter="handleManualLogin" type="text" placeholder="输入卡密 (如 VIP-XXXX)"
+            <input v-model="formattedInputKey" @keyup.enter="handleManualLogin" type="text" placeholder="输入卡密 (XXXX-XXXX-XXXX-XXXX)" maxlength="19"
               class="flex-1 w-full bg-transparent py-4 pr-4 outline-none text-[#1f2937] font-mono font-bold text-[15px] tracking-wide placeholder:font-sans placeholder:tracking-normal placeholder:font-normal placeholder:text-[#9ca3af]">
           </div>
         </div>
@@ -451,7 +451,7 @@
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
               </div>
-              <input v-model="unbindKey" type="text" placeholder="请输入要解绑的卡密"
+              <input v-model="formattedUnbindKey" type="text" placeholder="输入卡密 (XXXX-XXXX-XXXX-XXXX)" maxlength="19"
                 class="flex-1 w-full bg-transparent py-4 pr-4 outline-none text-[#1f2937] font-mono font-bold text-[15px] placeholder:font-sans placeholder:font-normal placeholder:text-[#9ca3af]">
             </div>
           </div>
@@ -679,48 +679,84 @@
 </template>
 
 <script setup lang="ts">
+// 将原有导入 db 的代码替换为：
+import { getAllLabels, saveLabel, deleteLabel, clearAndImportDB, clearLocalCache } from './utils/db';
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
-import { ipcRenderer } from 'electron'; // ★ 新增：主进程通信
+import { ipcRenderer, shell } from 'electron'; // 🌟 引入 shell 模块实现外部浏览器跳转
 import ComponentLibrary from './components/ComponentLibrary.vue';
 import CanvasArea from './components/CanvasArea.vue';
 import LabelThumbnail from './components/LabelThumbnail.vue';
-import { getAllLabels, saveLabel, deleteLabel, clearAndImportDB } from './utils/db';
 import { exportSinglePDF, exportBatchPDF } from './utils/pdfExport';
 import { cropImageWhitespace } from './utils/imageCrop';
 import type { LabelData } from './types';
+import { api } from './api'; // 🌟 引入统一下发的 Axios 接口集合
 
-const API_BASE_URL = 'https://api.easylabel.cloud/share';
 const MM_TO_PX = 3.78;
 const ZOOM_FACTOR = 2;
 
-// ★ 新增：将 login 加入当前视图状态，并默认显示
 const currentView = ref<'login' | 'dashboard' | 'editor'>('login');
 const showEditor = computed({ get: () => currentView.value === 'editor', set: (v) => currentView.value = v ? 'editor' : 'dashboard' });
 
-// ★ 新增：授权登录相关的状态
 const inputKey = ref('');
 const showUnbindModal = ref(false);
 const unbindKey = ref('');
 
+// 💡 演示：设置角标数字为 3 (通常在有新动态时调用)
+function showUnreadBadge() {
+  ipcRenderer.invoke('set-badge', 3);
+}
+
+// 💡 演示：清除角标 (通常在用户查看了消息/操作完成后调用)
+function clearBadge() {
+  ipcRenderer.invoke('set-badge', 0);
+}
+// ==========================================
+// 🌟 卡密输入智能格式化拦截器
+// 自动拦截输入：转换为大写、剔除中文空格、且自动按 4 位补充横杠
+// ==========================================
+const formatKeyLogic = (val: string) => {
+  let clean = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (clean.length > 16) clean = clean.slice(0, 16);
+  let formatted = '';
+  for (let i = 0; i < clean.length; i++) {
+    if (i > 0 && i % 4 === 0) formatted += '-';
+    formatted += clean[i];
+  }
+  return formatted;
+};
+
+const formattedInputKey = computed({
+  get: () => inputKey.value,
+  set: (val) => { inputKey.value = formatKeyLogic(val); }
+});
+
+const formattedUnbindKey = computed({
+  get: () => unbindKey.value,
+  set: (val) => { unbindKey.value = formatKeyLogic(val); }
+});
+// ==========================================
+
 const savedLabels = ref<LabelData[]>([]);
 
-// ★ 新增分页状态
 const currentPage = ref(1);
 const pageSize = ref(15);
 const totalLabels = ref(0);
 const totalPages = computed(() => Math.ceil(totalLabels.value / pageSize.value));
 
-// ★ 优化：刷新不再重新加载页面 (告别白屏重登录)，只刷新云端数据
 async function refreshPage() {
+  isLoading.value = true;
+  loadingText.value = '正在强制同步云端数据...';
+  await clearLocalCache(); // 🌟 清理本地缓存，强制下一次读取走云端验证
   currentPage.value = 1;
   await reloadGallery();
   showToast('云端数据已同步', 'success');
+  isLoading.value = false;
 }
 
 async function reloadGallery() {
   isLoading.value = true;
   loadingText.value = '正在同步云端标签库...';
-  await nextTick(); // 🌟 核心魔法：强制立即渲染全屏遮罩，不准卡顿！
+  await nextTick(); 
 
   const result = await getAllLabels(currentPage.value, pageSize.value);
   savedLabels.value = result.labels;
@@ -728,13 +764,11 @@ async function reloadGallery() {
   isLoading.value = false;
 }
 
-// ★ 新增：翻页函数
 async function changePage(page: number) {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
   await reloadGallery();
 }
-
 
 const currentLabel = ref<LabelData>({ id: '', name: '', wMM: 100, hMM: 100, elements: [] });
 const activeElementId = ref<string | null>(null);
@@ -777,10 +811,8 @@ const pdfInputRef = ref<HTMLInputElement | null>(null);
 const activeElement = computed(() => currentLabel.value.elements.find(el => el.id === activeElementId.value));
 
 onMounted(async () => {
-  // ★ 新增：组件挂载时首先进行静默校验
   await checkSilentLogin();
 
-  // 只有验证通过进入 Dashboard 后，才加载本地图库
   if (currentView.value === 'dashboard') {
     await reloadGallery();
   }
@@ -813,28 +845,19 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
   if ((window as any).showToast) (window as any).showToast(message, type);
 }
 
-// ==========================================
-// ★ 新增区域：核心授权验证逻辑
-// ==========================================
-
-// 基于纯设备硬件指纹的静默登录
 async function checkSilentLogin() {
   isLoading.value = true;
   loadingText.value = '正在核对设备级安全授权...';
 
   try {
-    // 直接呼叫底层自动登录，根本不传卡密
     const result = await ipcRenderer.invoke('auto-login');
 
     if (result.success) {
-      // 云端通过设备ID认出了我们！
-      // 可选：把云端返回的卡密存一下，只是为了给用户在“解绑框”里自动填上，免得他们忘了自己买的啥卡密
       if (result.key) {
         localStorage.setItem('easy_label_vip_key', result.key);
       }
       currentView.value = 'dashboard';
     } else {
-      // 云端不认识这台设备，说明是新用户或已解绑，默默停留在登录页即可
       currentView.value = 'login';
     }
   } catch (err) {
@@ -846,8 +869,6 @@ async function checkSilentLogin() {
 }
 
 async function handleManualLogin() {
-  // 加上这一行，字弄大点！
-  console.log('🚀🚀🚀 按钮被成功点击了！当前卡密：', inputKey.value);
   if (!inputKey.value.trim()) return showToast('请输入有效的卡密', 'warning');
 
   isLoading.value = true;
@@ -859,8 +880,9 @@ async function handleManualLogin() {
     if (result.success) {
       showToast('授权验证成功！', 'success');
       localStorage.setItem('easy_label_vip_key', inputKey.value.trim());
+      await clearLocalCache(); // 🌟 新卡密登录，清空旧缓存
       currentView.value = 'dashboard';
-      await reloadGallery(); // 验证成功后加载本地图库
+      await reloadGallery();
     } else {
       showToast(result.error || '验证失败，请检查卡密状态', 'error');
     }
@@ -891,6 +913,7 @@ async function confirmUnbind() {
       unbindKey.value = '';
       inputKey.value = '';
       localStorage.removeItem('easy_label_vip_key');
+      await clearLocalCache(); // 🌟 解绑后彻底销毁本地隐私数据缓存
       currentView.value = 'login';
     } else {
       showToast(result.error || '解绑失败，请检查卡密状态', 'error');
@@ -902,13 +925,10 @@ async function confirmUnbind() {
   }
 }
 
+// 🌟 核心：使用底层 shell 能力调用外部浏览器
 function openPurchaseLink() {
-  showToast('跳转前往官方发卡商店...', 'info');
+  shell.openExternal('https://www.easylabel.cloud');
 }
-
-// ==========================================
-// 原始逻辑区域：原封不动保留
-// ==========================================
 
 function autoFitCanvas() {
   if (currentView.value !== 'editor') return;
@@ -968,29 +988,18 @@ function triggerRenameModal(label: LabelData) {
 
 function triggerDeleteModal(id: string) { deleteTargetId.value = id; showDeleteModal.value = true; }
 async function confirmDeleteLabel() { 
-  // 1. 点击瞬间立刻开启全屏 Loading 遮罩，物理阻断用户二次点击
   isLoading.value = true;
   loadingText.value = '正在删除...';
-  
-  // 🌟 核心魔法：强制让出主线程，立刻把 Loading 遮罩画到屏幕上，防止卡顿
   await nextTick(); 
 
   try {
-    // 2. 向云端发起删除请求
     await deleteLabel(deleteTargetId.value); 
-    
-    // 3. 删除成功后，重新拉取最新的云端列表数据
     await reloadGallery(); 
-    
-    // 4. 关闭删除确认弹窗，并提示成功
     showDeleteModal.value = false; 
     showToast('已永久删除', 'success'); 
-    
   } catch (e: any) {
-    // 如果云端删除失败（例如网络断开或无权限），弹出真实的错误提示
     showToast(e.message || '删除失败，请重试', 'error');
   } finally {
-    // 5. 无论成功还是失败，最后务必关闭 Loading 状态，释放界面
     isLoading.value = false;
   }
 }
@@ -998,16 +1007,13 @@ async function confirmDeleteLabel() {
 function triggerSaveModal(type: 'save' | 'saveAs') {
   saveActionType.value = type;
 
-  // 🌟 智能判断核心：这个标签是否已经是存在于本地列表里的“老标签”？
   const isExisting = savedLabels.value.some(l => l.id === currentLabel.value.id);
 
-  // 如果是点击保存 + 是老标签 + 名字不为空，才触发“静默快存”不弹窗
   if (type === 'save' && isExisting && currentLabel.value.name.trim() !== '') {
     confirmSaveLabel(true);
     return;
   }
 
-  // 其他所有情况（全新创建的标签、或者点击另存为），永远弹出保存确认框
   saveLabelName.value = type === 'saveAs'
     ? (currentLabel.value.name === '新建标签' ? '未命名标签' : currentLabel.value.name) + ' - 副本'
     : (currentLabel.value.name === '新建标签' ? '未命名标签' : currentLabel.value.name);
@@ -1017,24 +1023,42 @@ function triggerSaveModal(type: 'save' | 'saveAs') {
 
 async function confirmSaveLabel(directSave = false) {
   if (!directSave && !saveLabelName.value.trim()) return showToast('请输入标签名称', 'warning');
+
+  // 🌟 新增：前端即时查重拦截 (遍历当前设备已加载的标签库)
+  const targetName = directSave ? currentLabel.value.name : saveLabelName.value.trim();
+  
+  let isDuplicate = false;
+  if (saveActionType.value === 'saveAs') {
+    // 场景A [另存为]：只要库里有这个名字，绝对拦截
+    isDuplicate = savedLabels.value.some(l => l.name === targetName);
+  } else {
+    // 场景B [保存/重命名]：名字重复了，且 ID 不是当前正在编辑的标签，则拦截
+    isDuplicate = savedLabels.value.some(l => l.name === targetName && l.id !== currentLabel.value.id);
+  }
+
+  // 触发重名拦截提示，不关闭弹窗，方便用户直接修改名字
+  if (isDuplicate) {
+    return showToast('该标签名称已存在，请换一个名称', 'warning');
+  }
+
+  // 校验通过后，再关闭弹窗并开启 Loading 遮罩
   if (!directSave) showSaveModal.value = false;
 
   isLoading.value = true;
   loadingText.value = '保存中...';
   activeElementId.value = null;
-  await nextTick(); // 🌟 立即弹出遮罩阻断用户操作！
+  await nextTick(); 
 
   try {
-    // ... 下方原有逻辑不变
     if (saveActionType.value === 'saveAs') {
       const newLabel = JSON.parse(JSON.stringify(currentLabel.value));
       newLabel.id = Date.now().toString();
-      newLabel.name = saveLabelName.value.trim();
+      newLabel.name = targetName;
       await saveLabel(newLabel);
       currentLabel.value = newLabel;
       showToast('已存为新副本！', 'success');
     } else {
-      if (!directSave) currentLabel.value.name = saveLabelName.value.trim();
+      if (!directSave) currentLabel.value.name = targetName;
       await saveLabel(JSON.parse(JSON.stringify(currentLabel.value)));
       showToast('保存成功', 'success');
     }
@@ -1042,11 +1066,7 @@ async function confirmSaveLabel(directSave = false) {
     showEditor.value = false;
 
   } catch (e: any) {
-    // 🌟 重点修改这里：提取出云端返回的 error 属性并弹窗提示
-    // 当重名时，这里会弹出："该标签名称已存在，请换一个名称"
     showToast(e.message || '保存失败，请稍后重试', 'error');
-
-    // 如果是直接保存报错，为了防止用户死锁，把编辑器强制保留打开状态
     if (directSave) showEditor.value = true;
   } finally {
     isLoading.value = false;
@@ -1187,46 +1207,52 @@ async function handleBatchPDF(e: Event) {
   }, 150);
 }
 
+// ==========================================
+// 🌟 统一使用 Axios API 接口调用分享功能
+// ==========================================
 async function uploadLabelToCloud(labelData: LabelData) {
   isLoading.value = true; 
   loadingText.value = '生成云端分享码...';
-  await nextTick(); // 🌟 立即弹出遮罩！
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  await nextTick(); 
+  
   try {
-    const response = await fetch(API_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(labelData), signal: controller.signal });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    displayShareCode.value = result.shareCode; showShareResultModal.value = true;
+    const result: any = await api.createShareCode(labelData);
+    displayShareCode.value = result.shareCode; 
+    showShareResultModal.value = true;
     try { await navigator.clipboard.writeText(result.shareCode); } catch (e) { }
   } catch (e: any) {
-    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast('网络请求失败', 'error'); }
-  } finally { clearTimeout(timeoutId); isLoading.value = false; }
+    showToast(e.message || '云端生成失败', 'error'); 
+  } finally { 
+    isLoading.value = false; 
+  }
 }
 
 async function downloadLabelFromCloud() {
   if (inputShareCode.value.length !== 6) return showToast('请输入完整的6位分享码', 'warning');
   isLoading.value = true; 
   loadingText.value = '云端检索中...';
-  await nextTick(); // 🌟 立即弹出遮罩！
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  await nextTick(); 
+  
   try {
-    const response = await fetch(`${API_BASE_URL}/${inputShareCode.value.toUpperCase()}`, { signal: controller.signal });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || '分享码无效');
+    const result: any = await api.getSharedLabel(inputShareCode.value.toUpperCase());
     const labelData = result.labelData as LabelData;
+    
     labelData.id = Date.now().toString();
     let baseName = labelData.name.replace(/ \(分享\d*\)$/, '');
     let finalName = baseName; let counter = 1;
     while (savedLabels.value.some(l => l.name === finalName)) { finalName = `${baseName} (分享${counter})`; counter++; }
     labelData.name = finalName;
-    await saveLabel(labelData); await reloadGallery();
-    showImportShareModal.value = false; inputShareCode.value = '';
+    
+    await saveLabel(labelData); 
+    await reloadGallery();
+    showImportShareModal.value = false; 
+    inputShareCode.value = '';
     showToast('提取成功！', 'success');
   } catch (e: any) {
-    if (e.name === 'AbortError') { showToast('网络连接超时，请检查网络环境', 'error'); } else { showToast(e.message || '提取失败', 'error'); }
-  } finally { clearTimeout(timeoutId); isLoading.value = false; }
+    showToast(e.message || '提取失败', 'error'); 
+  } finally { 
+    isLoading.value = false; 
+  }
 }
 </script>
 
@@ -1241,22 +1267,8 @@ async function downloadLabelFromCloud() {
   @apply bg-[#f9fafb] border border-[#e5e7eb] text-[#4b5563] hover:border-[#1677ff] hover:text-[#1677ff] hover:bg-[#eff6ff] px-4 py-2.5 text-[13px] shadow-sm;
 }
 
-/* 隐藏滚动条但保留滚动功能 */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>

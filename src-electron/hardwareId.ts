@@ -1,61 +1,71 @@
 import { execSync } from 'child_process';
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 import os from 'os';
 
 /**
- * 执行系统命令并返回整洁的字符串结果
+ * 执行系统命令并忽略报错
  */
-function getSystemData(cmd: string): string {
+function getCommandOutput(cmd: string): string {
   try {
-    return execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .replace(/\r+|\n+|\s+/ig, '') // 移除所有换行和空格
-      .trim();
+    return execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch (e) {
-    return ''; // 如果获取失败，返回空字符串作为兜底
+    return '';
   }
 }
 
 /**
- * 获取跨平台的硬件物理序列号
+ * 获取物理机底层绝对唯一的 UUID
  */
-export function generateHardDeviceId(): string {
-  let motherboard = '';
-  let cpuId = '';
-  
+function getSystemUUID(): string {
+  let uuid = '';
   const platform = os.platform();
 
   if (platform === 'win32') {
-    // Windows 系统底层命令
-    motherboard = getSystemData('powershell -command "(Get-CimInstance -Class Win32_BaseBoard).SerialNumber"');
-    cpuId = getSystemData('powershell -command "(Get-CimInstance -Class Win32_Processor).ProcessorId"');
-  } 
-  else if (platform === 'darwin') {
-    // macOS 系统底层命令
-    motherboard = getSystemData('ioreg -rd1 -c IOPlatformExpertDevice | grep IOPlatformSerialNumber | awk -F\\" \'{print $4}\'');
-    cpuId = getSystemData('sysctl -n machdep.cpu.brand_string');
-  } 
-  else if (platform === 'linux') {
-    // Linux 系统底层命令
-    motherboard = getSystemData('cat /sys/class/dmi/id/board_serial');
-    cpuId = getSystemData('cat /proc/cpuinfo | grep "serial" | awk \'{print $3}\'');
+    // Windows: 获取主板 UUID
+    const output = getCommandOutput('wmic csproduct get uuid');
+    uuid = output.split('\n')[1]?.trim() || '';
+  } else if (platform === 'darwin') {
+    // macOS: 获取硬件 IOPlatformUUID
+    const output = getCommandOutput('ioreg -rd1 -c IOPlatformExpertDevice');
+    const match = output.match(/"IOPlatformUUID"\s*=\s*"([^"]+)"/);
+    if (match) uuid = match[1];
+  } else if (platform === 'linux') {
+    // Linux: 获取 machine-id
+    uuid = getCommandOutput('cat /var/lib/dbus/machine-id') || getCommandOutput('cat /etc/machine-id');
   }
 
-  // 兜底方案：如果因为权限问题什么都没拿到，使用系统的网卡 MAC 地址
-  if (!motherboard && !cpuId) {
-    const interfaces = os.networkInterfaces();
-    let mac = '';
-    for (const key in interfaces) {
-      const net = interfaces[key]?.find(i => !i.internal && i.mac !== '00:00:00:00:00:00');
-      if (net) { mac = net.mac; break; }
+  return uuid.toLowerCase();
+}
+
+/**
+ * 降级方案：如果获取不到底层 UUID，获取系统首个有效物理网卡的 MAC 地址
+ */
+function getMacAddress(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    const iface = interfaces[name];
+    if (!iface) continue;
+    for (const info of iface) {
+      if (!info.internal && info.mac !== '00:00:00:00:00:00') {
+        return info.mac;
+      }
     }
-    motherboard = mac || os.hostname();
+  }
+  return '';
+}
+
+/**
+ * 🌟 生成极其严密的设备指纹
+ */
+export function generateHardDeviceId(): string {
+  let hardwareId = getSystemUUID();
+  
+  // 如果当前系统权限不足导致拿不到主板 UUID，则用 Mac地址 + 计算机名 作为备用唯一指纹
+  if (!hardwareId || hardwareId.includes('ffffffff')) {
+    hardwareId = getMacAddress() + '_' + os.hostname();
   }
 
-  // 将收集到的硬件信息拼接，加入您软件的专属“盐 (Salt)”
-  const rawId = `EasyLabel_v1_${motherboard}_${cpuId}`;
-  
-  // 使用 SHA-256 加密生成不可逆的 64 位指纹字符串
-  const hashedId = crypto.createHash('sha256').update(rawId).digest('hex');
-  
-  return hashedId;
+  // 加盐并生成不可逆的 SHA-256 哈希值
+  const salt = 'easylabel_pro_v2_';
+  return createHash('sha256').update(salt + hardwareId).digest('hex');
 }

@@ -1,6 +1,6 @@
 {
   "name": "easy-label-vue",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
@@ -8,12 +8,13 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "build:app": "vue-tsc -b && vite build && electron-builder",
-    "build:win": "vue-tsc -b && vite build && electron-builder --win --x64 --arm64",
+    "build:win": "vue-tsc -b && vite build && electron-builder --win --x64",
     "build:mac": "vue-tsc -b && vite build && electron-builder --mac --x64 --arm64",
     "build:linux": "vue-tsc -b && vite build && electron-builder --linux --x64 --arm64",
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.13.6",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "localforage": "^1.10.0",
@@ -47,28 +48,39 @@
     ],
     "mac": {
       "icon": "public/icon.png",
+      "artifactName": "EasyLabel-macOS-${arch}-v${version}.${ext}",
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
     "win": {
       "icon": "public/icon.ico",
+      "artifactName": "EasyLabel-Windows-${arch}-v${version}.${ext}",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
     "linux": {
       "icon": "public/icon.png",
+      "artifactName": "EasyLabel-Linux-${arch}-v${version}.${ext}",
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
