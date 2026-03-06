@@ -138,6 +138,19 @@ export async function getCloudLabels(page = 1, pageSize = 10) {
     return await getLocalLabelsPaginated(page, pageSize);
   }
 }
+// 🌟 新增：联合查询方法（优先查本地，本地没数据再查云端）
+export async function getLocalThenCloudLabels(page = 1, pageSize = 10) {
+  // 1. 先进行本地分页查询
+  const localData = await getLocalLabelsPaginated(page, pageSize);
+  
+  // 2. 如果本地查询到了数据，直接返回本地数据
+  if (localData.labels && localData.labels.length > 0) {
+    return localData;
+  }
+  
+  // 3. 如果本地完全为空（或者当前页为空），兜底去云端拉取确认
+  return await getCloudLabels(page, pageSize);
+}
 
 export async function clearAndImportDB(labels: any[]) {
   for (const label of labels) await saveLabel(label); 

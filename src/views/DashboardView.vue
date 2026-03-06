@@ -39,11 +39,11 @@
         <h2 class="text-[16px] font-extrabold text-slate-800 tracking-wide flex items-center gap-2">工作台 <span class="text-slate-300 font-normal">/</span> <span class="text-primary-600">标签管理</span></h2>
         
         <div class="flex items-center gap-2 sm:gap-3">
-          <button @click="refreshPage" :disabled="store.isLoading" class="btn btn-subtle text-slate-500 hover:text-primary-600 px-4 h-10 rounded-xl bg-white border border-slate-200 shadow-sm"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>同步刷新</button>
+          <button @click="refreshPage" :disabled="store.isLoading" class="btn text-slate-600 bg-white border border-slate-200 hover:border-primary-300 hover:text-primary-600 shadow-sm h-10 rounded-xl px-4 transition-colors"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>同步刷新</button>
           <div class="w-px h-5 bg-slate-200 mx-1"></div>
-          <button @click="showImportShareModal = true" :disabled="store.isLoading" class="btn text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-100 shadow-sm h-10 rounded-xl px-4"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line><rect x="3" y="19" width="18" height="2" rx="1"></rect></svg>提取分享</button>
-          <button @click="triggerJsonImport" :disabled="store.isLoading" class="btn btn-outline bg-white border-slate-200 shadow-sm h-10 rounded-xl px-4"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>导入配置</button>
-          <button @click="exportJsonLibrary" :disabled="store.isLoading" class="btn btn-outline bg-white border-slate-200 shadow-sm h-10 rounded-xl px-4"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>导出备份</button>
+          <button @click="showImportShareModal = true" :disabled="store.isLoading" class="btn bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-200 shadow-sm h-10 rounded-xl px-4 transition-colors"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line><rect x="3" y="19" width="18" height="2" rx="1"></rect></svg>获取分享的模板</button>
+          <button @click="triggerJsonImport" :disabled="store.isLoading" class="btn bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 hover:border-emerald-200 shadow-sm h-10 rounded-xl px-4 transition-colors"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>导入备份数据</button>
+          <button @click="exportJsonLibrary" :disabled="store.isLoading" class="btn bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 hover:border-amber-200 shadow-sm h-10 rounded-xl px-4 transition-colors"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>导出备份数据</button>
           <input type="file" ref="jsonInputRef" accept=".json" class="hidden" @change="handleJsonImport" />
         </div>
       </header>
@@ -188,12 +188,27 @@ async function confirmRename() {
 async function confirmDeleteLabel() {
     store.showLoading('正在删除...');
     try {
+        // 彻底删除云端及本地数据
         await deleteLabel(deleteTargetId.value); 
-        store.savedLabels = store.savedLabels.filter(l => l.id !== deleteTargetId.value);
-        store.totalLabels = Math.max(0, store.totalLabels - 1);
-        showDeleteModal.value = false; (window as any).showToast('已永久删除', 'success');
-        if (store.savedLabels.length === 0 && currentPage.value > 1) await changePage(currentPage.value - 1);
-    } catch (e: any) { (window as any).showToast(e.message, 'error'); } finally { store.hideLoading(); }
+        
+        // 分页逻辑处理：如果当前页只剩最后1条，且不是第1页，删完后向前翻一页
+        let targetPage = currentPage.value;
+        if (store.savedLabels.length === 1 && currentPage.value > 1) {
+            targetPage -= 1;
+        }
+        currentPage.value = targetPage;
+
+        // 🌟 核心修复：重新执行分页查询，传入第四个参数 preferLocal = true
+        // 优先查询本地数据，如果本地数据为空再去查云端
+        await store.fetchLabels(targetPage, 10, false, true);
+        
+        showDeleteModal.value = false; 
+        (window as any).showToast('已永久删除', 'success');
+    } catch (e: any) { 
+        (window as any).showToast(e.message, 'error'); 
+    } finally { 
+        store.hideLoading(); 
+    }
 }
 
 const showUnbindModal = ref(false);
@@ -273,7 +288,7 @@ function handleJsonImport(e: Event) {
 </script>
 
 <style scoped>
-@reference "../style.css"; /* 🌟 核心修复：引入包含 primary 自定义颜色的全局样式文件 */
+@reference "../style.css";
 
 .modal-enter-active, .modal-leave-active { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(0.95); }

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { getCloudLabels } from '../utils/db';
+import { getCloudLabels, getLocalThenCloudLabels } from '../utils/db';
 import type { LabelData } from '../types';
 
 export const useMainStore = defineStore('main', {
@@ -22,11 +22,15 @@ export const useMainStore = defineStore('main', {
     hideLoading() {
       this.isLoading = false;
     },
-    // 🌟 增加 append 参数，支持下拉懒加载
-    async fetchLabels(page = 1, pageSize = 10, append = false) {
-      if (!append) this.showLoading('正在同步数据...');
+    // 🌟 增加 preferLocal 参数，用于判断是否优先读取本地缓存
+    async fetchLabels(page = 1, pageSize = 10, append = false, preferLocal = false) {
+      if (!append) this.showLoading(preferLocal ? '正在读取本地数据...' : '正在同步数据...');
       try {
-        const data = await getCloudLabels(page, pageSize);
+        // 根据参数决定是强制拉云端，还是优先拉本地
+        const data = preferLocal 
+            ? await getLocalThenCloudLabels(page, pageSize) 
+            : await getCloudLabels(page, pageSize);
+
         if (append) {
           // 懒加载：追加到底部
           this.savedLabels.push(...data.labels);

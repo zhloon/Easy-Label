@@ -44,11 +44,15 @@ function createWindow() {
     height: 800,
     // 🌟 1. 运行时窗口图标：Windows 用 ico，macOS/Linux 用 png
     icon: path.join(publicPath, process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    autoHideMenuBar: true, // 🌟 隐藏系统默认的顶部菜单栏
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
     }
   });
+
+  // 🌟 彻底置空菜单栏，防止按 Alt 键唤出操作栏
+  mainWindow.setMenu(null);
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -56,9 +60,12 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  // 🌟 已经注释掉开发者模式的自动开启
+  /*
   if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
     mainWindow.webContents.openDevTools();
   }
+  */
 }
 
 app.whenReady().then(() => {
