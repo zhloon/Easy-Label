@@ -286,17 +286,28 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
     progressCallback(`正在查询 ${platName} 平台模板...`);
 
     try {
+      const listUrl = `${config.baseUrl}${config.listApi}`;
+      const listData = platform === 'shuaishou'
+        ? { pageNo: 1, pageSize: 99999, param: { keyword: '', typeId: (plat as any).typeId, platform: (plat as any).platformId } }
+        : new URLSearchParams({ platform: platName, currentPage: '1', limit: '9999' });
+      
+      console.log(`📡 [Migration] ${platName} 列表请求:`, {
+        url: listUrl,
+        method: 'POST',
+        data: platform === 'shuaishou' ? listData : Object.fromEntries(listData)
+      });
+      
       const listRes = await axios.post(
-        `${config.baseUrl}${config.listApi}`,
-        platform === 'shuaishou'
-          ? { pageNo: 1, pageSize: 99999, param: { keyword: '', typeId: (plat as any).typeId, platform: (plat as any).platformId } }
-          : new URLSearchParams({ platform: platName, currentPage: '1', limit: '9999' }),
+        listUrl,
+        listData,
         { headers }
       );
 
       console.log(`🔍 [Migration] ${platName} 列表响应:`, {
         code: listRes.data.code,
+        msg: listRes.data.msg,
         hasData: !!listRes.data.data,
+        dataKeys: listRes.data.data ? Object.keys(listRes.data.data) : null,
         itemsCount: Array.isArray(listRes.data.data) ? listRes.data.data.length : (listRes.data.data?.list?.length || 0)
       });
 
@@ -316,6 +327,18 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
             ? `${config.baseUrl}${(config.detailApi as (id: number) => string)(ids[i])}`
             : `${config.baseUrl}${config.detailApi}`;
           
+          const detailData = platform === 'shuaishou'
+            ? undefined
+            : new URLSearchParams({ id: String(ids[i]) });
+          
+          const detailMethod = platform === 'shuaishou' ? 'GET' : 'POST';
+          
+          console.log(`📡 [Migration] ${platName} #${ids[i]} 详情请求:`, {
+            url: detailUrl,
+            method: detailMethod,
+            data: detailData ? Object.fromEntries(detailData) : undefined
+          });
+          
           const detailRes = platform === 'shuaishou'
             ? await axios.get(
                 detailUrl,
@@ -323,7 +346,7 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
               )
             : await axios.post(
                 detailUrl,
-                new URLSearchParams({ id: String(ids[i]) }),
+                detailData,
                 { headers }
               );
 
