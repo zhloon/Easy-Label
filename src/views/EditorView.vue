@@ -490,7 +490,7 @@ function handleBatchPDF(e: Event) {
     try {
       const canvasEl = document.getElementById('canvas'); const sizerEl = document.getElementById('canvasSizer');
       if (canvasEl && sizerEl) {
-        await exportBatchPDF(file, canvasEl, sizerEl, store.currentLabel.wMM, store.currentLabel.hMM, store.currentLabel.name || '导出文件', barcodeEl, (percent, current, total) => { store.showLoading(`正在合成 (${current}/${total})...`); });
+        await exportBatchPDF(file, canvasEl, sizerEl, store.currentLabel.wMM, store.currentLabel.hMM, store.currentLabel.name || '导出文件', barcodeEl, (current, total) => { store.showLoading(`正在合成 (${current}/${total})...`); });
         showToast('合成完成！', 'success');
       }
     } catch (err: any) { showToast('请检查文件是否为条码', 'error'); } finally { store.hideLoading(); if (pdfInputRef.value) pdfInputRef.value.value = ''; }
