@@ -304,9 +304,6 @@ async function startMigration(platform: string) {
   showMigrationModal.value = false; // 关闭选择弹窗
   store.showLoading('正在检测登录状态...');
 
-  // 🌟 1. 尝试从本地获取已缓存的 token
-  const cachedAuth = getMigrationAuth(platform);
-
   const progressHandler = (_: any, message: string) => {
     if (message === 'WAITING_LOGIN') {
       store.hideLoading();
@@ -319,8 +316,8 @@ async function startMigration(platform: string) {
   ipcRenderer.on('migration-progress', progressHandler);
 
   try {
-    // 🌟 2. 将缓存的 token 和平台参数传给主进程
-    const result = await ipcRenderer.invoke('migrate-labels', platform, cachedAuth);
+    // 🌟 每次都需要重新登录获取 token
+    const result = await ipcRenderer.invoke('migrate-labels', platform);
     ipcRenderer.off('migration-progress', progressHandler);
 
     if (result && result.success) {
@@ -360,36 +357,6 @@ async function startMigration(platform: string) {
     (window as any).showToast('通信失败，请检查网络', 'error');
   }
 }
-
-// 🌟 从本地获取缓存的迁移认证信息
-function getMigrationAuth(platform: string) {
-  try {
-    const key = platform === 'shuaishou' ? 'easy_label_shuaishou_auth' : 'easy_label_jiatong_auth';
-    const authStr = localStorage.getItem(key);
-    if (authStr) {
-      return JSON.parse(authStr);
-    }
-  } catch (e) {
-    console.error('获取迁移认证失败:', e);
-  }
-  return null;
-}
-
-// 🌟 保存迁移认证信息到本地
-function saveMigrationAuth(platform: string, auth: any) {
-  try {
-    const key = platform === 'shuaishou' ? 'easy_label_shuaishou_auth' : 'easy_label_jiatong_auth';
-    localStorage.setItem(key, JSON.stringify(auth));
-    console.log(`✅ [Migration] 已保存 ${platform} 的认证信息`);
-  } catch (e) {
-    console.error('保存迁移认证失败:', e);
-  }
-}
-
-// 🌟 监听主进程发送的认证保存事件
-ipcRenderer.on('save-migration-auth', (_event, { platform, auth }: { platform: string, auth: any }) => {
-  saveMigrationAuth(platform, auth);
-});
 
 const showImportShareModal = ref(false);
 const showMigrationModal = ref(false); // 控制搬家选择弹窗

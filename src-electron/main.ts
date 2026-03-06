@@ -140,9 +140,6 @@ ipcMain.handle('migrate-labels', async (event, platform: string, storedAuth?: an
         clearInterval(pollInterval);
         hasStartedMigration = true;
         
-        // 🌟 核心新增：拿到新 Token 后，通过事件通知前端存入 LocalStorage
-        event.sender.send('save-migration-auth', { platform, auth: authResult });
-        
         if (!migrateWin.isDestroyed()) migrateWin.close(); 
         
         try {
