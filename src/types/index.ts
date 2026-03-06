@@ -55,3 +55,25 @@ export interface LabelData {
   platform?: string; // 🌟 新增这一行（使用 ? 表示可选，兼容老数据）
   // ... 其他你原有的属性
 }
+
+// 迁移相关类型定义
+export interface AuthResult {
+  token: string;
+  tokenKey?: string;
+}
+
+export interface MigrationResult {
+  success: boolean;
+  labels?: any[];
+  count?: number;
+  error?: string;
+}
+
+export interface PlatformConfig {
+  name: string;
+  baseUrl: string;
+  platforms: any[];
+  listApi: string | ((id: number) => string);
+  detailApi: string | ((id: number) => string);
+  tokenKey: string;
+}
