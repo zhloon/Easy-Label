@@ -251,7 +251,7 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
         items = Array.isArray(listRes.data.data) ? listRes.data.data : (listRes.data.data.list || []);
       }
 
-      const ids = items.map((item: any) => item.id).filter((id: any) => id);
+      const ids = items.map((item: any) => item.mainid || item.id).filter((id: any) => id);
       console.log(`📝 [Migration] ${platName} 有效 ID 数量:`, ids.length);
       if (ids.length === 0) continue;
 
@@ -261,12 +261,10 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
           const detailUrl = platform === 'shuaishou'
             ? `${config.baseUrl}${(config.detailApi as (id: number) => string)(ids[i])}`
             : `${config.baseUrl}${config.detailApi}`;
-          const detailRes = await axios.get(
+          const detailRes = await axios.post(
             detailUrl,
-            {
-              headers,
-              [platform === 'shuaishou' ? 'params' : 'data']: platform === 'shuaishou' ? {} : new URLSearchParams({ id: ids[i] })
-            }
+            new URLSearchParams({ id: String(ids[i]) }),
+            { headers }
           );
 
           console.log(`📊 [Migration] ${platName} #${ids[i]} 详情响应:`, {
