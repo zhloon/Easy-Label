@@ -216,7 +216,7 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
   const config = PLATFORMS[platform as keyof typeof PLATFORMS];
   const headers = platform === 'shuaishou'
     ? { 'Content-Type': 'application/json', 'token': auth.token, [config.tokenKey]: auth.tokenKey }
-    : { 'Content-Type': 'application/x-www-form-urlencoded', 'token': auth.token, 'Authorization': auth.token };
+    : { 'Authorization': auth.token };
 
   console.log(`📋 [Migration] 开始获取平台列表:`, {
     platform,
