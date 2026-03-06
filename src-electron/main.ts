@@ -119,7 +119,16 @@ ipcMain.handle('migrate-labels', async (event, platform: string, storedAuth?: an
     // 🌟 2. 如果无 Token 或已过期，弹出窗口要求登录
     const migrateWin = createMigrationWindow(platform);
     const targetUrl = platform === 'shuaishou' ? 'https://dztool.shuaishou.com/' : 'https://jiatongkuajing.com/';
+    
     migrateWin.loadURL(targetUrl);
+    
+    migrateWin.webContents.on('did-finish-load', () => {
+      console.log(`✅ [Migration] 窗口加载完成，开始检查登录状态...`);
+    });
+    
+    migrateWin.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      console.error(`❌ [Migration] 窗口加载失败: ${errorDescription} (${errorCode})`);
+    });
 
     let pollInterval: NodeJS.Timeout;
     let hasStartedMigration = false;
