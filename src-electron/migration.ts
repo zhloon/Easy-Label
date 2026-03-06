@@ -24,8 +24,7 @@ const PLATFORMS = {
     baseUrl: 'https://www.tupianfanyi.com',
     platforms: ['TEMU', 'SHEIN', 'TIKTOK', 'ALIEXPRESS', 'AMAZON'],
     listApi: '/bqConcat/get',
-    detailApi: '/bqConcat/getById',
-    tokenKey: 'token'
+    detailApi: '/bqConcat/getById'
   }
 };
 
@@ -271,10 +270,11 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
     platform,
     configName: config.name,
     baseUrl: config.baseUrl,
-    tokenKey: config.tokenKey,
-    auth: {
+    auth: platform === 'shuaishou' ? {
       token: auth.token ? auth.token.substring(0, 10) + '...' : 'missing',
       tokenKey: auth.tokenKey ? auth.tokenKey.substring(0, 10) + '...' : 'missing'
+    } : {
+      token: auth.token ? auth.token.substring(0, 10) + '...' : 'missing'
     },
     headers
   });
