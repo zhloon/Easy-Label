@@ -218,6 +218,13 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
     ? { 'Content-Type': 'application/json', 'token': auth.token, [config.tokenKey]: auth.tokenKey }
     : { 'Content-Type': 'application/x-www-form-urlencoded', 'token': auth.token, 'Authorization': auth.token };
 
+  console.log(`📋 [Migration] 开始获取平台列表:`, {
+    platform,
+    configName: config.name,
+    baseUrl: config.baseUrl,
+    tokenKey: config.tokenKey
+  });
+
   const results: any[] = [];
 
   for (const plat of config.platforms) {
@@ -233,12 +240,19 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
         { headers }
       );
 
+      console.log(`🔍 [Migration] ${platName} 列表响应:`, {
+        code: listRes.data.code,
+        hasData: !!listRes.data.data,
+        itemsCount: Array.isArray(listRes.data.data) ? listRes.data.data.length : (listRes.data.data?.list?.length || 0)
+      });
+
       let items: any[] = [];
       if (listRes.data.code === 0 && listRes.data.data) {
         items = Array.isArray(listRes.data.data) ? listRes.data.data : (listRes.data.data.list || []);
       }
 
       const ids = items.map((item: any) => item.id).filter((id: any) => id);
+      console.log(`📝 [Migration] ${platName} 有效 ID 数量:`, ids.length);
       if (ids.length === 0) continue;
 
       for (let i = 0; i < ids.length; i++) {
@@ -255,25 +269,41 @@ async function fetchPlatformList(platform: string, auth: AuthResult, progressCal
             }
           );
 
+          console.log(`📊 [Migration] ${platName} #${ids[i]} 详情响应:`, {
+            code: detailRes.data?.code,
+            hasData: !!detailRes.data?.data,
+            dataKeys: detailRes.data?.data ? Object.keys(detailRes.data.data) : null
+          });
+
           if (detailRes.data?.code === 0 || detailRes.data?.data) {
             const converter = platform === 'shuaishou' ? convertShuaishouData : convertJiatongData;
             const converted = converter(detailRes.data.data || detailRes.data, platName);
-            console.log(`✅ [Migration] 转换数据:`, {
-              platform: platName,
-              original: detailRes.data.data || detailRes.data,
-              converted: converted
+            console.log(`✅ [Migration] ${platName} #${ids[i]} 转换完成:`, {
+              id: converted.id,
+              name: converted.name,
+              wMM: converted.wMM,
+              hMM: converted.hMM,
+              platform: converted.platform,
+              elementsCount: converted.elements?.length || 0
             });
             results.push(converted);
+          } else {
+            console.warn(`⚠️ [Migration] ${platName} #${ids[i]} 无有效数据`, detailRes.data);
           }
-        } catch (e) {
-          console.error(`迁移 ${platName} 失败:`, e);
+        } catch (e: any) {
+          console.error(`❌ [Migration] ${platName} #${ids[i]} 迁移失败:`, e.message);
         }
         await new Promise(r => setTimeout(r, 200));
       }
-    } catch (err) {
-      console.error(`${config.name} ${platName} 失败:`, err);
+    } catch (err: any) {
+      console.error(`❌ [Migration] ${config.name} ${platName} 失败:`, err.message);
     }
   }
+
+  console.log(`🏁 [Migration] 所有平台迁移完成:`, {
+    totalPlatforms: config.platforms.length,
+    totalResults: results.length
+  });
 
   return results;
 }
@@ -285,10 +315,22 @@ export async function executeMigration(
   event: IpcMainEvent
 ): Promise<MigrationResult> {
   try {
+    console.log(`🚀 [Migration] 开始执行数据迁移:`, {
+      platform,
+      hasToken: !!auth.token,
+      tokenKey: auth.tokenKey
+    });
+    
     event.sender.send('migration-progress', '已获取有效授权，开始抓取数据...');
 
     const convertedLabels = await fetchPlatformList(platform, auth, (message) => {
       event.sender.send('migration-progress', message);
+    });
+
+    console.log(`✅ [Migration] 数据迁移完成:`, {
+      platform,
+      totalLabels: convertedLabels.length,
+      labels: convertedLabels.map((l: any) => ({ id: l.id, name: l.name, platform: l.platform }))
     });
 
     return {
@@ -297,7 +339,7 @@ export async function executeMigration(
       count: convertedLabels.length
     };
   } catch (error: any) {
-    console.error('迁移过程发生错误:', error);
+    console.error(`❌ [Migration] 数据迁移失败:`, error.message);
     return {
       success: false,
       error: error.message || '迁移过程发生错误'
@@ -331,7 +373,7 @@ export async function checkLoginStatus(
 
   try {
     if (platform === 'shuaishou') {
-      return await window.webContents.executeJavaScript(`
+      const result = await window.webContents.executeJavaScript(`
         (function() {
           const userStoreStr = window.localStorage.getItem('userStore');
           if (!userStoreStr) return null;
@@ -340,16 +382,29 @@ export async function checkLoginStatus(
           return { token: userStore.token, tokenKey: userStore.tokenKey };
         })();
       `);
+      if (result) {
+        console.log(`✅ [Migration] 甩手工具登录状态检查成功`);
+      } else {
+        console.log(`⏳ [Migration] 甩手工具尚未登录`);
+      }
+      return result;
     } else if (platform === 'jiatong') {
-      return await window.webContents.executeJavaScript(`
+      const result = await window.webContents.executeJavaScript(`
         (function() {
           const token = window.localStorage.getItem('token') || window.sessionStorage.getItem('token');
           if (!token) return null;
           return { token: token };
         })();
       `);
+      if (result) {
+        console.log(`✅ [Migration] 佳同工具登录状态检查成功`);
+      } else {
+        console.log(`⏳ [Migration] 佳同工具尚未登录`);
+      }
+      return result;
     }
-  } catch (e) {
+  } catch (e: any) {
+    console.error(`❌ [Migration] 检查登录状态失败:`, e.message);
     return null;
   }
 
