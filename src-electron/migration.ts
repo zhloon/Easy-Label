@@ -31,6 +31,14 @@ const PLATFORMS = {
 
 // 甩手工具数据转换
 function convertShuaishouData(sourceJson: any, targetPlatform: string): any {
+  console.log(`🔄 [Migration] 开始转换甩手数据:`, {
+    targetPlatform,
+    sourceKeys: Object.keys(sourceJson),
+    hasCanvasJSON: !!sourceJson.canvasJSON,
+    hasJson: !!sourceJson.json,
+    hasContent: !!sourceJson.content
+  });
+  
   const outLabel = {
     id: Date.now().toString() + Math.floor(Math.random() * 10000).toString(),
     name: (sourceJson.name || '导入的标签') + '（甩手）',
@@ -42,7 +50,15 @@ function convertShuaishouData(sourceJson: any, targetPlatform: string): any {
 
   try {
     const jsonStr = sourceJson.canvasJSON || sourceJson.json || sourceJson.content || '{}';
+    console.log(`📝 [Migration] 甩手 canvasJSON 字符串长度:`, jsonStr.length);
+    
     const canvasData = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+    console.log(`📊 [Migration] 甩手 canvasData:`, {
+      hasObjects: !!canvasData.objects,
+      objectsLength: Array.isArray(canvasData.objects) ? canvasData.objects.length : 0,
+      canvasKeys: Object.keys(canvasData)
+    });
+    
     let zIndex = 100;
 
     if (canvasData && canvasData.objects && Array.isArray(canvasData.objects)) {
@@ -77,8 +93,15 @@ function convertShuaishouData(sourceJson: any, targetPlatform: string): any {
         return out;
       });
     }
-  } catch (err) {
-    console.error('解析甩手数据失败', err);
+    
+    console.log(`✅ [Migration] 甩手数据转换完成:`, {
+      elementsCount: outLabel.elements.length,
+      name: outLabel.name,
+      wMM: outLabel.wMM,
+      hMM: outLabel.hMM
+    });
+  } catch (err: any) {
+    console.error('❌ [Migration] 解析甩手数据失败', err.message, err.stack);
   }
 
   return outLabel;
@@ -88,6 +111,14 @@ function convertShuaishouData(sourceJson: any, targetPlatform: string): any {
 function convertJiatongData(sourceJson: any, targetPlatform: string): any {
   const R = 1.25;
   const fontRatio = 0.85;
+  
+  console.log(`🔄 [Migration] 开始转换佳同数据:`, {
+    targetPlatform,
+    sourceKeys: Object.keys(sourceJson),
+    hasCanvasJSON: !!sourceJson.canvasJSON,
+    hasJson: !!sourceJson.json,
+    hasContent: !!sourceJson.content
+  });
 
   const outLabel = {
     id: Date.now().toString() + Math.floor(Math.random() * 10000).toString(),
@@ -100,7 +131,15 @@ function convertJiatongData(sourceJson: any, targetPlatform: string): any {
 
   try {
     if (sourceJson.canvasJSON) {
+      console.log(`📝 [Migration] 佳同 canvasJSON 字符串长度:`, sourceJson.canvasJSON.length);
+      
       const canvasData = JSON.parse(sourceJson.canvasJSON);
+      console.log(`📊 [Migration] 佳同 canvasData:`, {
+        hasObjects: !!canvasData.objects,
+        objectsLength: Array.isArray(canvasData.objects) ? canvasData.objects.length : 0,
+        canvasKeys: Object.keys(canvasData)
+      });
+      
       let zIndex = 100;
 
       if (canvasData.objects && Array.isArray(canvasData.objects)) {
@@ -204,9 +243,18 @@ function convertJiatongData(sourceJson: any, targetPlatform: string): any {
           return out;
         });
       }
+    } else {
+      console.log(`⚠️ [Migration] 佳同数据没有 canvasJSON 字段!`);
     }
-  } catch (err) {
-    console.error('解析佳同失败', err);
+    
+    console.log(`✅ [Migration] 佳同数据转换完成:`, {
+      elementsCount: outLabel.elements.length,
+      name: outLabel.name,
+      wMM: outLabel.wMM,
+      hMM: outLabel.hMM
+    });
+  } catch (err: any) {
+    console.error('❌ [Migration] 解析佳同数据失败', err.message, err.stack);
   }
 
   return outLabel;
