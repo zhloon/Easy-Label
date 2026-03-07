@@ -14,7 +14,10 @@
 
             <div v-for="el in elements" :key="el.id" :id="'el-' + el.id"
               class="absolute cursor-move box-border select-none group"
-              :class="activeId === el.id && editingId !== el.id ? 'ring-2 ring-primary-500 ring-offset-0 z-[100]' : 'ring-1 ring-transparent hover:ring-slate-300 hover:ring-dashed'"
+              :class="[
+                activeId === el.id && editingId !== el.id ? 'ring-2 ring-primary-500 ring-offset-0 z-[100]' : 'ring-1 ring-transparent hover:ring-slate-300 hover:ring-dashed',
+                el.type === 'line' ? 'before:absolute before:-inset-3 before:content-[\'\']' : ''
+              ]"
               :style="{ width: el.style.width, height: el.style.height, left: el.style.left, top: el.style.top, zIndex: el.style.zIndex }"
               @mousedown.stop="startDrag($event, el)">
 
@@ -47,11 +50,12 @@
                   <div v-if="el.type === 'text'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
                   <div v-if="el.type === 'text'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
                 </template>
+                
                 <template v-else-if="el.type === 'line'">
-                  <div v-if="el.isVertical === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
-                  <div v-if="el.isVertical === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
-                  <div v-if="el.isVertical === 'false'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
-                  <div v-if="el.isVertical === 'false'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
+                  <div v-if="String(el.isVertical) === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
+                  <div v-if="String(el.isVertical) === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
+                  <div v-if="String(el.isVertical) !== 'true'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
+                  <div v-if="String(el.isVertical) !== 'true'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
                 </template>
               </div>
             </div>
@@ -67,52 +71,31 @@ import { ref } from 'vue';
 import type { LabelElement } from '../types';
 import { cropImageWhitespace } from '../utils/imageCrop';
 
-// ==========================================
-// 组件通信 (Props & Emits & Models)
-// ==========================================
 const props = defineProps<{ wMM: number; hMM: number; scale: number; }>();
-// const emit = defineEmits<{
-//   'update:scale': [value: number];
-// }>();
 
-// 保留您优雅的 Vue 3.4 双向绑定写法
 const elements = defineModel<LabelElement[]>('elements', { required: true });
 const activeId = defineModel<string | null>('activeId', { required: true });
-
-// // ==========================================
-// // 常量、状态与画布缩放
-// // ==========================================
-// function zoomIn() { emit('update:scale', Math.min(3, props.scale + 0.1)); }
-// function zoomOut() { emit('update:scale', Math.max(0.2, props.scale - 0.1)); }
-// function resetZoom() { emit('update:scale', 1); }
 
 const editingId = ref<string | null>(null);
 const MM_TO_PX = 3.78;
 const ZOOM_FACTOR = 2;
-
-// ==========================================
-// 交互事件处理
-// ==========================================
 
 function clearActive() {
   activeId.value = null;
   editingId.value = null;
 }
 
-// 匹配模板：@dblclick.stop="startEditing(el.id, $event)"
 function startEditing(id: string, e: MouseEvent) {
   editingId.value = id;
   activeId.value = id;
   setTimeout(() => { (e.target as HTMLElement).focus(); }, 0);
 }
 
-// 匹配模板：@blur="finishEditing($event, el)"
 function finishEditing(e: FocusEvent, el: LabelElement) {
   el.content = (e.target as HTMLElement).innerText;
   editingId.value = null;
 }
 
-// 匹配模板：@drop.prevent="handleDrop"
 async function handleDrop(e: DragEvent) {
   const dataStr = e.dataTransfer?.getData('text/plain');
   if (dataStr) {
@@ -139,7 +122,6 @@ async function handleDrop(e: DragEvent) {
   }
 }
 
-// ★ 修复点：完美匹配模板的 @mousedown.stop="startDrag($event, el)"
 function startDrag(e: MouseEvent, el: LabelElement) {
   if (e.button !== 0 || editingId.value === el.id) return;
   activeId.value = el.id;
@@ -166,7 +148,6 @@ function startDrag(e: MouseEvent, el: LabelElement) {
   document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
 }
 
-// 保留了您原本的边缘拖拽缩放功能！
 function startResize(e: MouseEvent, el: LabelElement, dir: string) {
   e.stopPropagation();
   const startX = e.clientX; const startY = e.clientY;
@@ -183,8 +164,13 @@ function startResize(e: MouseEvent, el: LabelElement, dir: string) {
     if (dir.includes('s')) newH = startH + dy;
     if (dir.includes('n')) { newH = startH - dy; newT = startTop + dy; }
 
-    if (newW < 15) { newW = 15; if (dir.includes('w')) newL = startLeft + startW - 15; }
-    if (newH < 15) { newH = 15; if (dir.includes('n')) newT = startTop + startH - 15; }
+    // 🌟 修复点3：将线条排除在 15px 的最小值检查之外！彻底根除线条被缩放导致偏移和消失的 Bug。
+    const isVert = String(el.isVertical) === 'true';
+    let minW = (el.type === 'line' && isVert) ? 1 : 15;
+    let minH = (el.type === 'line' && !isVert) ? 1 : 15;
+
+    if (newW < minW) { newW = minW; if (dir.includes('w')) newL = startLeft + startW - minW; }
+    if (newH < minH) { newH = minH; if (dir.includes('n')) newT = startTop + startH - minH; }
 
     if (['image', 'barcode'].includes(el.type)) {
       if (dir === 'se' || dir === 'e' || dir === 's') { newH = newW / ratio; }
@@ -195,7 +181,7 @@ function startResize(e: MouseEvent, el: LabelElement, dir: string) {
 
     if (el.type === 'line') {
       const thickPx = 0.2 * MM_TO_PX * ZOOM_FACTOR;
-      if (el.isVertical === 'true') { newW = thickPx; } else { newH = thickPx; }
+      if (isVert) { newW = thickPx; } else { newH = thickPx; }
     }
 
     el.style.width = `${newW}px`; el.style.height = `${newH}px`; el.style.left = `${newL}px`; el.style.top = `${newT}px`;
@@ -212,51 +198,12 @@ function startResize(e: MouseEvent, el: LabelElement, dir: string) {
   @apply absolute w-2.5 h-2.5 bg-[#1677ff] border-[1.5px] border-white rounded-full shadow-md z-[110];
 }
 
-.resizer.nw {
-  top: -5px;
-  left: -5px;
-  cursor: nwse-resize;
-}
-
-.resizer.ne {
-  top: -5px;
-  right: -5px;
-  cursor: nesw-resize;
-}
-
-.resizer.sw {
-  bottom: -5px;
-  left: -5px;
-  cursor: nesw-resize;
-}
-
-.resizer.se {
-  bottom: -5px;
-  right: -5px;
-  cursor: nwse-resize;
-}
-
-.resizer.w {
-  top: calc(50% - 5px);
-  left: -5px;
-  cursor: ew-resize;
-}
-
-.resizer.e {
-  top: calc(50% - 5px);
-  right: -5px;
-  cursor: ew-resize;
-}
-
-.resizer.n {
-  top: -5px;
-  left: calc(50% - 5px);
-  cursor: ns-resize;
-}
-
-.resizer.s {
-  bottom: -5px;
-  left: calc(50% - 5px);
-  cursor: ns-resize;
-}
+.resizer.nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.resizer.ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.resizer.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.resizer.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.resizer.w { top: calc(50% - 5px); left: -5px; cursor: ew-resize; }
+.resizer.e { top: calc(50% - 5px); right: -5px; cursor: ew-resize; }
+.resizer.n { top: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+.resizer.s { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
 </style>

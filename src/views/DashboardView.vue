@@ -102,7 +102,7 @@
               </div>
             </div>
             
-            <div v-for="i in (10 - store.savedLabels.length)" :key="'ghost-'+i" class="invisible pointer-events-none flex flex-col shrink-0">
+            <div v-for="i in Math.max(0, 10 - store.savedLabels.length)" :key="'ghost-'+i" class="invisible pointer-events-none flex flex-col shrink-0">
               <div class="w-full aspect-square bg-transparent"></div>
               <div class="p-4 border-t border-transparent"><div class="text-[14px]">&nbsp;</div></div>
             </div>
@@ -148,28 +148,34 @@
         </div>
       </div>
     </transition>
+    
     <transition name="modal"><div v-if="showRenameModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4"><div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[400px] overflow-hidden flex flex-col"><div class="px-8 py-6 bg-slate-50/50 border-b border-slate-100"><h3 class="font-extrabold text-[18px] text-slate-900 text-center">重命名标签</h3></div><div class="p-8"><input v-model="renameValue" type="text" class="input-field w-full text-center text-xl font-bold py-4 rounded-2xl bg-slate-50 focus:bg-white transition-colors outline-none border border-transparent focus:border-primary-300"></div><div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-4"><button @click="showRenameModal = false" class="btn btn-subtle py-3.5 rounded-xl">取消</button><button @click="confirmRename" class="btn btn-primary py-3.5 rounded-xl">确认修改</button></div></div></div></transition>
+    
     <transition name="modal"><div v-if="showDeleteModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4"><div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[360px] overflow-hidden flex flex-col text-center"><div class="p-8 pt-10"><div class="w-16 h-16 bg-danger-bg text-danger rounded-full flex items-center justify-center mx-auto mb-5"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div><h3 class="text-xl font-extrabold text-slate-900 mb-2">确认永久删除？</h3><p class="text-sm text-slate-500 font-medium">删除后云端及本地数据将彻底清除。</p></div><div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-4"><button @click="showDeleteModal = false" class="btn btn-subtle py-3.5 rounded-xl">取消</button><button @click="confirmDeleteLabel" class="btn btn-danger py-3.5 rounded-xl">确认删除</button></div></div></div></transition>
+    
     <transition name="modal"><div v-if="showImportShareModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4"><div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[400px] overflow-hidden flex flex-col"><div class="px-8 py-6 bg-primary-50/50 border-b border-primary-100/50"><h3 class="font-extrabold text-[18px] text-primary-600 text-center">提取分享模板</h3></div><div class="p-8"><input v-model="inputShareCode" type="text" placeholder="输入 6 位分享码" maxlength="6" class="input-field w-full text-center text-2xl font-black uppercase tracking-[0.2em] py-4 rounded-2xl bg-slate-50 text-primary-600 focus:bg-white outline-none border border-transparent focus:border-primary-300"></div><div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-4"><button @click="showImportShareModal = false" class="btn btn-subtle py-3.5 rounded-xl">取消</button><button @click="confirmImportShare" class="btn btn-primary py-3.5 rounded-xl">确认获取</button></div></div></div></transition>
+    
     <transition name="modal"><div v-if="showShareResultModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4"><div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[400px] overflow-hidden flex flex-col text-center"><div class="p-8 pt-10"><div class="w-16 h-16 bg-success-bg text-success rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><h3 class="text-xl font-extrabold text-slate-900 mb-2">云端分享成功</h3><p class="text-sm text-slate-500 font-medium mb-6">您的朋友可以通过此分享码获取该模板</p><div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl py-5 text-4xl font-black text-primary-600 tracking-[0.25em] mb-2 select-all cursor-copy" @click="copyShareCode">{{ displayShareCode }}</div></div><div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-4"><button @click="showShareResultModal = false" class="btn btn-subtle py-3.5 rounded-xl">关闭</button><button @click="copyShareCode" class="btn btn-primary py-3.5 rounded-xl">复制分享码</button></div></div></div></transition>
-  </div>
-  <transition name="modal">
-    <div v-if="showUnbindModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4">
-      <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[380px] overflow-hidden flex flex-col text-center border border-white/50">
-        <div class="p-8 pt-10">
-          <div class="w-16 h-16 bg-danger-bg text-danger rounded-full flex items-center justify-center mx-auto mb-5">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path><line x1="4" y1="4" x2="20" y2="20"></line></svg>
+    
+    <transition name="modal">
+      <div v-if="showUnbindModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4">
+        <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[380px] overflow-hidden flex flex-col text-center border border-white/50">
+          <div class="p-8 pt-10">
+            <div class="w-16 h-16 bg-danger-bg text-danger rounded-full flex items-center justify-center mx-auto mb-5">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path><line x1="4" y1="4" x2="20" y2="20"></line></svg>
+            </div>
+            <h3 class="text-xl font-extrabold text-slate-900 mb-2">确认解除设备绑定？</h3>
+            <p class="text-sm text-slate-500 font-medium leading-relaxed">解绑后本设备将失去且清除本地数据，请慎重操作。</p>
           </div>
-          <h3 class="text-xl font-extrabold text-slate-900 mb-2">确认解除设备绑定？</h3>
-          <p class="text-sm text-slate-500 font-medium leading-relaxed">解绑后本设备将失去且清除本地数据，请慎重操作。</p>
-        </div>
-        <div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-4">
-          <button @click="showUnbindModal = false" class="btn btn-subtle py-3.5 rounded-xl text-[15px]">取消保留</button>
-          <button @click="confirmUnbindDevice" class="btn btn-danger py-3.5 rounded-xl text-[15px]">确认解绑</button>
+          <div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-4">
+            <button @click="showUnbindModal = false" class="btn btn-subtle py-3.5 rounded-xl text-[15px]">取消保留</button>
+            <button @click="confirmUnbindDevice" class="btn btn-danger py-3.5 rounded-xl text-[15px]">确认解绑</button>
+          </div>
         </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+
+  </div>
 </template>
 
 <script setup lang="ts">

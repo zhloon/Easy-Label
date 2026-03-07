@@ -200,6 +200,45 @@ export async function getLocalThenCloudLabels(page = 1, pageSize = 10, platform 
   return await getCloudLabels(page, pageSize, platform);
 }
 
+// ==========================================
+// 🌟 数据迁移与导入功能重构
+// ==========================================
 export async function clearAndImportDB(labels: any[]) {
-  for (const label of labels) await saveLabel(label); 
+  if (!labels || labels.length === 0) {
+    throw new Error('导入的数据为空');
+  }
+
+  // 1. 先清空本地旧数据缓存
+  await clearLocalCache();
+
+  // 2. 获取授权状态
+  const isAuth = getAuthKey();
+
+  if (!isAuth) {
+    // ----------------------------------------
+    // 【未登录状态】作为离线工具，直接批量写入本地
+    // ----------------------------------------
+    await saveBatchToLocal(labels);
+    return { success: true, message: '本地数据导入成功' };
+  } else {
+    // ----------------------------------------
+    // 【已登录状态】云端与本地双端同步
+    // ----------------------------------------
+    try {
+      // 核心修改：使用专门的批量云端接口，一次网络请求完成所有数据的上传
+      const cloudRes: any = await saveBatchLabels(labels);
+      
+      if (!cloudRes.success) {
+        throw new Error(cloudRes.error || '云端批量保存失败');
+      }
+
+      // 云端批量保存成功后，再批量写入本地缓存，确保强一致性
+      await saveBatchToLocal(labels);
+      
+      return { success: true, message: '云端与本地同步导入成功' };
+    } catch (error: any) {
+      // 如果云端保存失败，抛出异常阻断流程，不要写入本地，防止产生脏数据
+      throw new Error(error.message || '导入过程中发生异常，已终止');
+    }
+  }
 }
