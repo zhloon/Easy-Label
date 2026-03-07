@@ -51,51 +51,28 @@
       "dist-electron/**/*"
     ],
     "mac": {
-      "icon": "icon.png",
+      "icon": "./public/icon.png",
       "artifactName": "EasyLabel-macOS-${arch}-v${version}.${ext}",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ]
+      "target": [ { "target": "dmg", "arch": ["x64", "arm64"] } ]
     },
     "win": {
-      "icon": "icon.ico",
+      "icon": "./public/icon.ico",
       "artifactName": "EasyLabel-Windows-${arch}-v${version}.${ext}",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
+      "target": [ { "target": "nsis", "arch": ["x64"] } ]
     },
     "linux": {
-      "icon": "icon.png",
+      "icon": "./public/icon.png",
       "artifactName": "EasyLabel-Linux-${arch}-v${version}.${ext}",
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ]
+      "target": [ { "target": "AppImage", "arch": ["x64", "arm64"] } ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerIcon": "icon.ico",
-      "uninstallerIcon": "icon.ico",
-      "installerHeaderIcon": "icon.ico"
+      "installerIcon": "./public/icon.ico",
+      "uninstallerIcon": "./public/icon.ico",
+      "installerHeaderIcon": "./public/icon.ico"
     }
   }
 }
