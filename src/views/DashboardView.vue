@@ -180,8 +180,33 @@
           </div>
         </div>
       </div>
+      
     </transition>
-
+    <transition name="modal">
+      <div v-if="showNewTaskModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4">
+        <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[360px] overflow-hidden flex flex-col border border-white/50">
+          <div class="px-6 py-5 bg-slate-50/50 border-b border-slate-100 text-center">
+            <h3 class="font-extrabold text-[16px] text-slate-900 tracking-wide">新建空白标签</h3>
+          </div>
+          <div class="p-6 space-y-4">
+            <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-50 transition-all shadow-inner">
+              <span class="text-[13px] font-bold text-slate-500 whitespace-nowrap shrink-0 w-12 text-right">宽度</span>
+              <input v-model.number="newLabelW" type="number" min="10" class="flex-1 w-full bg-transparent outline-none text-xl font-mono font-bold text-slate-900 text-center">
+              <span class="text-[12px] font-bold text-slate-400 whitespace-nowrap shrink-0">mm</span>
+            </div>
+            <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-50 transition-all shadow-inner">
+              <span class="text-[13px] font-bold text-slate-500 whitespace-nowrap shrink-0 w-12 text-right">高度</span>
+              <input v-model.number="newLabelH" type="number" min="10" class="flex-1 w-full bg-transparent outline-none text-xl font-mono font-bold text-slate-900 text-center">
+              <span class="text-[12px] font-bold text-slate-400 whitespace-nowrap shrink-0">mm</span>
+            </div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-3">
+            <button @click="showNewTaskModal = false" class="h-[42px] rounded-xl font-bold text-[14px] text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all">取消</button>
+            <button @click="confirmNewEditor" class="h-[42px] rounded-xl font-bold text-[14px] text-white bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-500/20 transition-all">确认创建</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -240,19 +265,38 @@ async function changePage(page: number) {
 }
 
 function openEditor(label: LabelData) { store.currentLabel = JSON.parse(JSON.stringify(label)); store.setView('editor'); }
+// ==========================================
+// 🌟 新建空白标签相关逻辑
+// ==========================================
+const showNewTaskModal = ref(false); // 控制新建弹窗显示
+const newLabelW = ref(100);          // 默认宽度 100mm
+const newLabelH = ref(100);          // 默认高度 100mm
+
+// 点击“新建空白标签”按钮时，先弹出输入尺寸的弹窗
 function openNewEditor() { 
-  // 🌟 判断当前选中的平台。如果是 "ALL" (全部)，则默认分配到 "OTHER"
+  newLabelW.value = 100; // 重置默认值
+  newLabelH.value = 100;
+  showNewTaskModal.value = true; 
+}
+
+// 在弹窗中点击“确认创建”后，携带尺寸跳转到编辑器
+function confirmNewEditor() {
+  if (!newLabelW.value || !newLabelH.value) {
+    return (window as any).showToast('请输入完整的物理尺寸', 'warning');
+  }
+
   const targetPlatform = store.currentPlatform === 'ALL' ? 'OTHER' : store.currentPlatform;
 
   store.currentLabel = { 
     id: Date.now().toString(), 
     name: '新建标签', 
-    wMM: 100, 
-    hMM: 100, 
+    wMM: newLabelW.value, 
+    hMM: newLabelH.value, 
     elements: [],
-    platform: targetPlatform // 🌟 核心：将平台参数传给新建的标签画布数据
+    platform: targetPlatform 
   }; 
   
+  showNewTaskModal.value = false;
   store.setView('editor'); 
 }
 

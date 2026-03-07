@@ -1,258 +1,260 @@
 <template>
-  <div class="flex-1 overflow-auto relative canvas-bg bg-slate-50" id="workspace-container" @mousedown="clearActive"
-    @dragover.prevent @dragenter.prevent @drop.prevent="handleDrop">
-    <div class="min-w-full min-h-full flex p-10">
-      
-      <div id="canvasSizer" class="relative shrink-0 transition-all duration-150 m-auto"
-        :style="{ width: `${wMM * MM_TO_PX * ZOOM_FACTOR * scale}px`, height: `${hMM * MM_TO_PX * ZOOM_FACTOR * scale}px` }">
-        
-        <div id="canvasWrapper" class="absolute top-0 left-0 origin-top-left transition-transform duration-150"
-          :style="{ transform: `scale(${scale})` }">
-
-          <div id="canvas" class="relative bg-white shadow-[0_12px_30px_rgba(0,0,0,0.15)] overflow-hidden ring-1 ring-slate-200"
-            :style="{ width: `${wMM * MM_TO_PX * ZOOM_FACTOR}px`, height: `${hMM * MM_TO_PX * ZOOM_FACTOR}px` }">
-
-            <div v-for="el in elements" :key="el.id" :id="'el-' + el.id"
-              class="absolute cursor-move box-border select-none group"
-              :class="[
-                activeId === el.id && editingId !== el.id ? 'ring-2 ring-primary-500 ring-offset-0 z-[100]' : 'ring-1 ring-transparent hover:ring-slate-300 hover:ring-dashed',
-                el.type === 'line' ? 'before:absolute before:-inset-3 before:content-[\'\']' : ''
-              ]"
-              :style="{ width: el.style.width, height: el.style.height, left: el.style.left, top: el.style.top, zIndex: el.style.zIndex }"
-              @mousedown.stop="startDrag($event, el)">
-
-              <div v-if="el.type === 'text'" :contenteditable="editingId === el.id"
-                @dblclick.stop="startEditing(el.id, $event)" @blur="finishEditing($event, el)"
-                class="w-full h-full whitespace-pre-wrap break-words outline-none leading-snug text-slate-900"
-                :class="{ 'cursor-text': editingId === el.id }"
-                :style="{ fontSize: el.fontSize, fontWeight: el.fontWeight }">{{ el.content }}</div>
-
-              <img v-else-if="el.type === 'image'" :src="el.imgUrl || el.originalUrl"
-                class="w-full h-full object-contain pointer-events-none" draggable="false" />
-
-              <div v-else-if="el.type === 'barcode'"
-                class="w-full h-full bg-white border border-slate-900 flex flex-col items-center justify-center overflow-hidden p-1">
-                <div class="w-[80%] h-[45%] bg-slate-900 mt-1"></div>
-                <span
-                  class="text-[11px] mt-1 text-danger font-bold text-center leading-tight tracking-wider">占位条码</span>
-              </div>
-
-              <div v-else-if="el.type === 'line'" class="w-full h-full bg-slate-900 pointer-events-none"></div>
-
-              <div v-if="activeId === el.id && editingId !== el.id">
-                <template v-if="['image', 'barcode', 'text'].includes(el.type)">
-                  <div class="resizer nw" @mousedown.stop="startResize($event, el, 'nw')"></div>
-                  <div class="resizer ne" @mousedown.stop="startResize($event, el, 'ne')"></div>
-                  <div class="resizer sw" @mousedown.stop="startResize($event, el, 'sw')"></div>
-                  <div class="resizer se" @mousedown.stop="startResize($event, el, 'se')"></div>
-                  <div v-if="el.type === 'text'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
-                  <div v-if="el.type === 'text'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
-                  <div v-if="el.type === 'text'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
-                  <div v-if="el.type === 'text'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
-                </template>
-                <template v-else-if="el.type === 'line'">
-                  <div v-if="String(el.isVertical) === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
-                  <div v-if="String(el.isVertical) === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
-                  <div v-if="String(el.isVertical) !== 'true'" class="resizer w" @mousedown.stop="startResize($event, el, 'w')"></div>
-                  <div v-if="String(el.isVertical) !== 'true'" class="resizer e" @mousedown.stop="startResize($event, el, 'e')"></div>
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="flex-1 w-full h-full bg-slate-100 relative overflow-hidden" ref="containerRef">
+    <canvas ref="canvasRef"></canvas>
+    
+    <div class="absolute bottom-6 right-6 flex gap-2 shadow-lg bg-white rounded-lg p-2 z-10">
+      <button @click="resetZoom" class="p-2 hover:bg-slate-100 rounded text-sm text-slate-700 font-medium">
+        🔍 居中视图
+      </button>
+      <button @click="clearCanvas" class="p-2 hover:bg-slate-100 rounded text-sm text-red-600 font-medium">
+        🗑️ 清空画布
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { LabelElement } from '../types';
-import { cropImageWhitespace } from '../utils/imageCrop';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import * as fabric from 'fabric';
 
-const props = defineProps<{ wMM: number; hMM: number; scale: number; }>();
+// 从您的 store 中获取当前选中的标签数据
+// import { useMainStore } from '../store/useMainStore';
+// const store = useMainStore();
 
-const elements = defineModel<LabelElement[]>('elements', { required: true });
-const activeId = defineModel<string | null>('activeId', { required: true });
+const containerRef = ref<HTMLElement | null>(null);
+const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-const editingId = ref<string | null>(null);
-const MM_TO_PX = 3.78;
-const ZOOM_FACTOR = 2;
+// 全局维护 Fabric 实例
+let fCanvas: fabric.Canvas | null = null;
+let paperRect: fabric.Rect | null = null; // 底层白纸
 
-function clearActive() {
-  activeId.value = null;
-  editingId.value = null;
-}
+// ==========================================
+// 🌟 1. 初始化 Fabric 画布
+// ==========================================
+const initCanvas = () => {
+  if (!canvasRef.value || !containerRef.value) return;
 
-function startEditing(id: string, e: MouseEvent) {
-  editingId.value = id;
-  activeId.value = id;
-  setTimeout(() => { (e.target as HTMLElement).focus(); }, 0);
-}
+  fCanvas = new fabric.Canvas(canvasRef.value, {
+    width: containerRef.value.clientWidth,
+    height: containerRef.value.clientHeight,
+    backgroundColor: '#f1f5f9', // 浅蓝灰工作区背景
+    preserveObjectStacking: true, // 选中对象时，保持原有层级不变
+    selection: true, // 允许框选多个组件
+  });
 
-function finishEditing(e: FocusEvent, el: LabelElement) {
-  el.content = (e.target as HTMLElement).innerText;
-  editingId.value = null;
+  // 🖱️ 开启鼠标滚轮缩放功能
+  fCanvas.on('mouse:wheel', (opt) => {
+    // 🌟 核心修复 1：显式断言原生事件为 WheelEvent (滚轮事件)
+    const evt = opt.e as WheelEvent; 
+    
+    const delta = evt.deltaY;
+    let zoom = fCanvas!.getZoom();
+    zoom *= 0.999 ** delta;
+    if (zoom > 20) zoom = 20; 
+    if (zoom < 0.1) zoom = 0.1; 
+    
+    // 🌟 核心修复 2：使用 new fabric.Point 包装坐标
+    fCanvas!.zoomToPoint(new fabric.Point(evt.offsetX, evt.offsetY), zoom);
+    
+    evt.preventDefault();
+    evt.stopPropagation();
+  });
 
-  // 🌟 修复点1：如果用户打字变多了导致换行，自动撑大外框防止文字溢出！
-  setTimeout(() => {
-    const domNode = document.getElementById(`el-${el.id}`);
-    if (domNode) {
-      const textChild = domNode.firstElementChild as HTMLElement;
-      const currentH = parseFloat(el.style.height) || domNode.offsetHeight;
-      if (textChild && textChild.scrollHeight > currentH) {
-        el.style.height = `${textChild.scrollHeight}px`;
-      }
+  // 🌟 定义局部变量来记录画布拖拽状态，完美避开 TS 报错
+  let isDragging = false;
+  let lastPosX = 0;
+  let lastPosY = 0;
+
+  // 🖱️ 开启按住 Alt 键拖拽平移画布功能
+  fCanvas.on('mouse:down', (opt) => {
+    const evt = opt.e as MouseEvent;
+    if (evt.altKey === true) {
+      isDragging = true;            // 改用局部变量
+      fCanvas!.selection = false;   // selection 是原生属性，不会报错
+      lastPosX = evt.clientX;       // 记录 X 坐标
+      lastPosY = evt.clientY;       // 记录 Y 坐标
     }
-  }, 0);
-}
+  });
 
-async function handleDrop(e: DragEvent) {
-  const dataStr = e.dataTransfer?.getData('text/plain');
-  if (dataStr) {
-    const payload = JSON.parse(dataStr);
-    const canvasRect = document.getElementById('canvas')?.getBoundingClientRect();
-    if (!canvasRect) return;
-    const logicLeft = (e.clientX - canvasRect.left) / props.scale;
-    const logicTop = (e.clientY - canvasRect.top) / props.scale;
-
-    let finalImgUrl = payload.imgUrl;
-    let finalW = payload.type === 'text' ? 200 : 80;
-    let finalH = 80;
-
-    if (payload.type === 'image' && finalImgUrl) {
-      const cropResult = await cropImageWhitespace(finalImgUrl);
-      finalImgUrl = cropResult.url;
-      finalH = Math.round(80 * (cropResult.height / cropResult.width));
+  fCanvas.on('mouse:move', (opt) => {
+    if (isDragging) {
+      const e = opt.e as MouseEvent;
+      const vpt = fCanvas!.viewportTransform!;
+      
+      // 使用局部变量计算偏移量
+      vpt[4] += e.clientX - lastPosX;
+      vpt[5] += e.clientY - lastPosY;
+      
+      fCanvas!.requestRenderAll();
+      
+      // 更新局部变量
+      lastPosX = e.clientX;
+      lastPosY = e.clientY;
     }
+  });
 
-    elements.value.push({
-      id: Date.now().toString(), type: payload.type, content: payload.content, imgUrl: finalImgUrl, originalUrl: payload.imgUrl, fontSize: '24px', fontWeight: 'normal',
-      style: { width: `${finalW}px`, height: payload.type === 'text' ? 'auto' : `${finalH}px`, left: `${logicLeft}px`, top: `${logicTop}px`, zIndex: 10 }
+  fCanvas.on('mouse:up', () => {
+    if (fCanvas!.viewportTransform) {
+      fCanvas!.setViewportTransform(fCanvas!.viewportTransform);
+    }
+    isDragging = false;           // 释放拖拽状态
+    fCanvas!.selection = true;    // 恢复框选功能
+  });
+
+  fCanvas.on('mouse:up', () => {
+    // 恢复当前的视口变换矩阵
+    if (fCanvas!.viewportTransform) {
+      fCanvas!.setViewportTransform(fCanvas!.viewportTransform);
+    }
+    
+    // 🌟 核心修复：直接修改局部变量，去掉前面的 fCanvas!.
+    isDragging = false;           
+    
+    // 恢复画布的框选功能 (selection 是原生属性，不会报错)
+    fCanvas!.selection = true;    
+  });
+  
+  // 监听窗口大小改变，重置画布宽高
+  window.addEventListener('resize', handleResize);
+};
+
+const handleResize = () => {
+  if (fCanvas && containerRef.value) {
+    // 🌟 核心修复：使用 setDimensions 统一设置宽高，TS 完美支持，且性能更好
+    fCanvas.setDimensions({
+      width: containerRef.value.clientWidth,
+      height: containerRef.value.clientHeight
     });
+    
+    // 重新渲染画布以适应新尺寸
+    fCanvas.requestRenderAll();
   }
-}
+};
 
-function startDrag(e: MouseEvent, el: LabelElement) {
-  if (e.button !== 0 || editingId.value === el.id) return;
-  activeId.value = el.id;
-  const startX = e.clientX;
-  const startY = e.clientY;
-  const startLeft = parseFloat(el.style.left);
-  const startTop = parseFloat(el.style.top);
-  const canvasW = props.wMM * MM_TO_PX * ZOOM_FACTOR;
-  const canvasH = props.hMM * MM_TO_PX * ZOOM_FACTOR;
+// ==========================================
+// 🌟 2. 核心：根据 JSON 渲染标签
+// ==========================================
+const renderLabelData = (labelData: any) => {
+  if (!fCanvas) return;
+  fCanvas.clear(); 
+  fCanvas.backgroundColor = '#f1f5f9';
 
-  const onMouseMove = (ev: MouseEvent) => {
-    const dx = (ev.clientX - startX) / props.scale;
-    const dy = (ev.clientY - startY) / props.scale;
-    const domNode = document.getElementById(`el-${el.id}`);
-    const elW = domNode ? domNode.offsetWidth : parseFloat(el.style.width) || 50;
-    const elH = domNode ? domNode.offsetHeight : parseFloat(el.style.height) || 50;
+  // 毫米转像素基准 (以常见 203 DPI 打印机为例，1mm ≈ 8px；如果按屏幕 96dpi 算，1mm ≈ 3.78px)
+  const mmToPx = 3.78; 
+  const paperW = (labelData.wMM || 100) * mmToPx;
+  const paperH = (labelData.hMM || 100) * mmToPx;
 
-    const maxLeft = Math.max(0, canvasW - elW);
-    const maxTop = Math.max(0, canvasH - elH);
-    el.style.left = `${Math.max(0, Math.min(startLeft + dx, maxLeft))}px`;
-    el.style.top = `${Math.max(0, Math.min(startTop + dy, maxTop))}px`;
-  };
-  const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
-  document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
-}
+  // 👉 2.1 绘制标签底纸 (白底阴影)
+  paperRect = new fabric.Rect({
+    left: (fCanvas.width! - paperW) / 2,
+    top: (fCanvas.height! - paperH) / 2,
+    width: paperW,
+    height: paperH,
+    fill: '#ffffff',
+    selectable: false, // 纸张不可选中和拖动
+    evented: false,
+    shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 15, offsetX: 5, offsetY: 5 })
+  });
+  fCanvas.add(paperRect);
 
-function startResize(e: MouseEvent, el: LabelElement, dir: string) {
-  e.stopPropagation();
-  const domNode = document.getElementById(`el-${el.id}`);
-  const startX = e.clientX; const startY = e.clientY;
+  // 👉 2.2 遍历渲染元素
+  const elements = labelData.elements || [];
   
-  // 兼容 auto 获取真实宽高
-  const startW = parseFloat(el.style.width) || domNode?.offsetWidth || 15;
-  const startH = parseFloat(el.style.height) || domNode?.offsetHeight || 15;
-  
-  const startLeft = parseFloat(el.style.left); const startTop = parseFloat(el.style.top);
-  const ratio = startW / startH;
+  elements.forEach((el: any) => {
+    let fObj: fabric.Object | null = null;
+    
+    // 解析原数据中的位置和尺寸 (去掉 'px')
+    const parsePx = (val: string | number) => parseFloat(String(val).replace('px', '')) || 0;
+    
+    // 元素的绝对坐标 = 纸张原点坐标 + 元素相对纸张的 left/top
+    const left = paperRect!.left! + parsePx(el.style?.left);
+    const top = paperRect!.top! + parsePx(el.style?.top);
+    const width = parsePx(el.style?.width || 100);
+    const height = parsePx(el.style?.height || 20);
 
-  const onMouseMove = (ev: MouseEvent) => {
-    const dx = (ev.clientX - startX) / props.scale; const dy = (ev.clientY - startY) / props.scale;
-    let newW = startW; let newH = startH; let newL = startLeft; let newT = startTop;
-
-    if (dir.includes('e')) newW = startW + dx;
-    if (dir.includes('w')) { newW = startW - dx; newL = startLeft + dx; }
-    if (dir.includes('s')) newH = startH + dy;
-    if (dir.includes('n')) { newH = startH - dy; newT = startTop + dy; }
-
-    const isVert = String(el.isVertical) === 'true';
-    let minW = (el.type === 'line' && isVert) ? 1 : 15;
-    let minH = (el.type === 'line' && !isVert) ? 1 : 15;
-
-    if (newW < minW) { newW = minW; if (dir.includes('w')) newL = startLeft + startW - minW; }
-    if (newH < minH) { newH = minH; if (dir.includes('n')) newT = startTop + startH - minH; }
-
-    if (['image', 'barcode'].includes(el.type)) {
-      if (dir === 'se' || dir === 'e' || dir === 's') { newH = newW / ratio; }
-      else if (dir === 'sw' || dir === 'w') { newH = newW / ratio; }
-      else if (dir === 'ne' || dir === 'n') { newH = newW / ratio; newT = startTop + startH - newH; }
-      else if (dir === 'nw') { newH = newW / ratio; newT = startTop + startH - newH; }
+    // 🔴 文本渲染：使用 Textbox，天然支持多行和双击编辑！
+    if (el.type === 'text') {
+      fObj = new fabric.Textbox(el.content || '请输入文字', {
+        left, top, width,
+        fontSize: parsePx(el.fontSize || 14),
+        fontWeight: el.fontWeight === 'bold' ? 'bold' : 'normal',
+        fontFamily: 'Microsoft YaHei, sans-serif',
+        fill: '#000000',
+        splitByGrapheme: true, // 完美支持中文换行
+        lineHeight: el.style?.lineHeight || 1.2,
+      });
+    } 
+    // 🔴 线条渲染
+    else if (el.type === 'line') {
+      const isVertical = el.isVertical === 'true';
+      fObj = new fabric.Line(
+        [left, top, isVertical ? left : left + width, isVertical ? top + height : top], 
+        { stroke: '#000000', strokeWidth: 1.5, padding: 5 } // padding 增加线的点击热区
+      );
+    } 
+    // 🔴 条码占位 (后续可使用 jsbarcode 渲染为 Base64 传入 fabric.Image)
+    else if (el.type === 'barcode') {
+      fObj = new fabric.Rect({
+        left, top, width: el.customW || width, height: el.customH || height,
+        fill: '#f8fafc', stroke: '#94a3b8', strokeDashArray: [4, 4],
+      });
+      // 可以附加文本说明
+      const tagText = new fabric.Text('条码占位: ' + el.content, {
+        left: left + 5, top: top + 5, fontSize: 12, fill: '#64748b'
+      });
+      // 将底框和文字合成一个组
+      fObj = new fabric.Group([fObj, tagText], { left, top });
     }
 
-    if (el.type === 'line') {
-      const thickPx = 0.2 * MM_TO_PX * ZOOM_FACTOR;
-      if (isVert) { newW = thickPx; } else { newH = thickPx; }
+    // 将生成的组件加入画布
+    if (fObj) {
+      // 保存一下原始 ID，方便后续修改和保存
+      fObj.set('id', el.id); 
+      fCanvas!.add(fObj);
     }
+  });
 
-    // ==========================================
-    // 🌟 修复点2：精准阻止文本框被拉扯到小于文字！
-    // ==========================================
-    // ==========================================
-    // 🌟 修复点2：精准阻止文本框被拉扯到小于文字，同时完美支持缩小多余空白！
-    // ==========================================
-    if (el.type === 'text' && domNode) {
-      const textChild = domNode.firstElementChild as HTMLElement;
-      if (textChild) {
-        // 1. 临时保存原有高度，并强制设为 auto 解除 h-full 的束缚
-        const oldChildH = textChild.style.height;
-        const oldNodeH = domNode.style.height;
-        textChild.style.height = 'auto';
-        domNode.style.height = 'auto';
-        
-        // 2. 将临时 DOM 宽度设为新宽度，让浏览器瞬间重新排版
-        domNode.style.width = `${newW}px`;
-        
-        // 3. 此时测算出来的才是文字纯天然、最真实的所需高度！
-        const realMinH = textChild.scrollHeight;
-        
-        // 4. 测完之后立刻恢复原有状态（速度极快，肉眼不可见）
-        textChild.style.height = oldChildH;
-        domNode.style.height = oldNodeH;
-        
-        // 5. 如果用户拖拽的高度小于文字实际需要的高度，强制托底保护
-        if (newH < realMinH) {
-          newH = realMinH;
-          // 如果是往上拖拽，还需要同步修正 Top 坐标防止组件往上瞬移漂移
-          if (dir.includes('n')) newT = startTop + startH - realMinH;
-        }
-      }
-    }
+  fCanvas.renderAll();
+  resetZoom(); // 渲染完毕后自动居中视角
+};
 
-    el.style.width = `${newW}px`; el.style.height = `${newH}px`; el.style.left = `${newL}px`; el.style.top = `${newT}px`;
-  };
-  const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
-  document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
-}
+// ==========================================
+// 🌟 辅助功能
+// ==========================================
+const resetZoom = () => {
+  if (!fCanvas || !paperRect) return;
+  // 恢复 1:1 缩放
+  fCanvas.setZoom(1);
+  // 计算纸张中心点，将其挪到画布中心
+  const vpt = fCanvas.viewportTransform!;
+  vpt[4] = (fCanvas.width! - paperRect.width!) / 2 - paperRect.left!;
+  vpt[5] = (fCanvas.height! - paperRect.height!) / 2 - paperRect.top!;
+  fCanvas.requestRenderAll();
+};
+
+const clearCanvas = () => {
+  if (fCanvas) {
+    fCanvas.clear();
+    fCanvas.backgroundColor = '#f1f5f9';
+    fCanvas.renderAll();
+  }
+};
+
+// 生命周期绑定
+onMounted(() => {
+  initCanvas();
+  // TODO: 这里您可以去监听 Store 中选中的标签变化，然后调用 renderLabelData(store.currentLabel)
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+  if (fCanvas) fCanvas.dispose();
+});
 </script>
 
 <style scoped>
-@reference "tailwindcss";
-
-.resizer {
-  @apply absolute w-2.5 h-2.5 bg-[#1677ff] border-[1.5px] border-white rounded-full shadow-md z-[110];
+/* 隐藏原生默认的高亮轮廓 */
+:deep(.canvas-container) {
+  outline: none !important;
 }
-
-.resizer.nw { top: -5px; left: -5px; cursor: nwse-resize; }
-.resizer.ne { top: -5px; right: -5px; cursor: nesw-resize; }
-.resizer.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
-.resizer.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
-.resizer.w { top: calc(50% - 5px); left: -5px; cursor: ew-resize; }
-.resizer.e { top: calc(50% - 5px); right: -5px; cursor: ew-resize; }
-.resizer.n { top: -5px; left: calc(50% - 5px); cursor: ns-resize; }
-.resizer.s { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
 </style>
