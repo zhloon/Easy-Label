@@ -127,24 +127,31 @@
     </main>
 
     <transition name="modal">
-      <div v-if="showMigrationModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] backdrop-blur-sm px-4">
-        <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-[400px] overflow-hidden flex flex-col text-center border border-white/50">
-          <div class="px-8 py-6 bg-indigo-50/50 border-b border-indigo-100/50">
-            <h3 class="font-extrabold text-[18px] text-indigo-600 text-center">选择数据来源</h3>
+      <div v-if="showMigrationModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2000] px-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-[400px] overflow-hidden flex flex-col">
+          
+          <div class="px-8 py-5 bg-indigo-50 border-b border-indigo-100 text-center">
+            <h3 class="text-[18px] font-black text-indigo-600 tracking-wider m-0">选择数据来源</h3>
           </div>
-          <div class="p-8 flex flex-col gap-4">
-            <button @click="startMigration('shuaishou')" class="btn bg-white border-2 border-slate-200 hover:border-indigo-500 hover:text-indigo-600 py-4 rounded-2xl text-[16px] font-bold transition-all shadow-sm flex items-center justify-center gap-2">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-              甩手工具
+          
+          <div class="p-8 flex flex-col gap-5 bg-white">
+            
+            <button @click="startMigration('shuaishou')" class="w-full h-24 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 overflow-hidden relative group p-3 flex items-center justify-center bg-white cursor-pointer">
+              <img src="/shuaishou.png" alt="甩手" class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300" />
             </button>
-            <button @click="startMigration('jiatong')" class="btn bg-white border-2 border-slate-200 hover:border-indigo-500 hover:text-indigo-600 py-4 rounded-2xl text-[16px] font-bold transition-all shadow-sm flex items-center justify-center gap-2">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-              佳同工具
+
+            <button @click="startMigration('jiatong')" class="w-full h-24 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 overflow-hidden relative group p-3 flex items-center justify-center bg-white cursor-pointer">
+              <img src="/jiatong.png" alt="佳同" class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+            </button>
+
+          </div>
+
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-center">
+            <button @click="showMigrationModal = false" class="btn bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 py-2.5 px-8 rounded-xl font-bold transition-colors shadow-sm">
+              取消
             </button>
           </div>
-          <div class="px-6 py-5 bg-slate-50/50 border-t border-slate-100 grid grid-cols-1">
-            <button @click="showMigrationModal = false" class="btn btn-subtle py-3.5 rounded-xl text-[15px]">取消</button>
-          </div>
+
         </div>
       </div>
     </transition>
@@ -221,8 +228,9 @@ onMounted(async () => {
 
 async function refreshPage() { 
     currentPage.value = 1;
-    await store.fetchLabels(1, 10); 
-    (window as any).showToast('数据已同步', 'success'); 
+    // 🌟 核心修改：传入第5个参数 true，触发 forceCloud，强制忽略本地缓存，从云端拉取最新数据
+    await store.fetchLabels(1, 10, false, false, true); 
+    (window as any).showToast('已从云端同步最新数据', 'success'); 
 }
 
 async function changePage(page: number) { 

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import { getLocalLabelsPaginated, getLocalThenCloudLabels } from '../utils/db';
+// 🌟 核心修改 1：引入 getCloudLabels
+import { getLocalLabelsPaginated, getLocalThenCloudLabels, getCloudLabels } from '../utils/db';
 import type { LabelData } from '../types';
 
 interface MainState {
@@ -9,11 +10,10 @@ interface MainState {
   currentLabel: LabelData;
   isLoading: boolean;
   loadingText: string;
-  currentPlatform: string; // <--- 加上这一行
+  currentPlatform: string; 
 }
 
 export const useMainStore = defineStore('main', {
-  // 2. 🌟 在这里给 currentPlatform 赋初始值 'ALL'
   state: (): MainState => ({
     currentView: 'login',
     savedLabels: [],
@@ -21,7 +21,7 @@ export const useMainStore = defineStore('main', {
     currentLabel: {} as LabelData,
     isLoading: false,
     loadingText: '',
-    currentPlatform: 'TEMU', // <--- 加上这一行
+    currentPlatform: 'TEMU', 
   }),
   actions: {
       setView(view: 'login' | 'dashboard' | 'editor') {
@@ -35,15 +35,17 @@ export const useMainStore = defineStore('main', {
         this.isLoading = false;
         this.loadingText = '';
       },
-// 3. 🌟 修改 fetchLabels，让它每次都去读取当前的 currentPlatform
-    async fetchLabels(page = 1, pageSize = 10, forceLocal = false, skipLoading = false) {
+    // 🌟 核心修改 2：新增第5个参数 forceCloud
+    async fetchLabels(page = 1, pageSize = 10, forceLocal = false, skipLoading = false, forceCloud = false) {
       if (!skipLoading) this.showLoading('加载中...');
       try {
-        const platform = this.currentPlatform; // 获取当前选中的平台
+        const platform = this.currentPlatform; 
         let res;
         
-        // 调用 db.ts 时，把 platform 传进去！
-        if (forceLocal) {
+        if (forceCloud) {
+          // 🚀 如果开启了 forceCloud，直接强制从云端获取数据，底层会自动覆盖本地对应的标签
+          res = await getCloudLabels(page, pageSize, platform);
+        } else if (forceLocal) {
           res = await getLocalLabelsPaginated(page, pageSize, platform);
         } else {
           res = await getLocalThenCloudLabels(page, pageSize, platform);

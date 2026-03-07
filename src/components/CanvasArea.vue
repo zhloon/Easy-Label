@@ -50,7 +50,6 @@
                   <div v-if="el.type === 'text'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
                   <div v-if="el.type === 'text'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
                 </template>
-                
                 <template v-else-if="el.type === 'line'">
                   <div v-if="String(el.isVertical) === 'true'" class="resizer n" @mousedown.stop="startResize($event, el, 'n')"></div>
                   <div v-if="String(el.isVertical) === 'true'" class="resizer s" @mousedown.stop="startResize($event, el, 's')"></div>
@@ -94,6 +93,18 @@ function startEditing(id: string, e: MouseEvent) {
 function finishEditing(e: FocusEvent, el: LabelElement) {
   el.content = (e.target as HTMLElement).innerText;
   editingId.value = null;
+
+  // 🌟 修复点1：如果用户打字变多了导致换行，自动撑大外框防止文字溢出！
+  setTimeout(() => {
+    const domNode = document.getElementById(`el-${el.id}`);
+    if (domNode) {
+      const textChild = domNode.firstElementChild as HTMLElement;
+      const currentH = parseFloat(el.style.height) || domNode.offsetHeight;
+      if (textChild && textChild.scrollHeight > currentH) {
+        el.style.height = `${textChild.scrollHeight}px`;
+      }
+    }
+  }, 0);
 }
 
 async function handleDrop(e: DragEvent) {
@@ -150,8 +161,13 @@ function startDrag(e: MouseEvent, el: LabelElement) {
 
 function startResize(e: MouseEvent, el: LabelElement, dir: string) {
   e.stopPropagation();
+  const domNode = document.getElementById(`el-${el.id}`);
   const startX = e.clientX; const startY = e.clientY;
-  const startW = parseFloat(el.style.width); const startH = parseFloat(el.style.height);
+  
+  // 兼容 auto 获取真实宽高
+  const startW = parseFloat(el.style.width) || domNode?.offsetWidth || 15;
+  const startH = parseFloat(el.style.height) || domNode?.offsetHeight || 15;
+  
   const startLeft = parseFloat(el.style.left); const startTop = parseFloat(el.style.top);
   const ratio = startW / startH;
 
@@ -164,7 +180,6 @@ function startResize(e: MouseEvent, el: LabelElement, dir: string) {
     if (dir.includes('s')) newH = startH + dy;
     if (dir.includes('n')) { newH = startH - dy; newT = startTop + dy; }
 
-    // 🌟 修复点3：将线条排除在 15px 的最小值检查之外！彻底根除线条被缩放导致偏移和消失的 Bug。
     const isVert = String(el.isVertical) === 'true';
     let minW = (el.type === 'line' && isVert) ? 1 : 15;
     let minH = (el.type === 'line' && !isVert) ? 1 : 15;
@@ -182,6 +197,40 @@ function startResize(e: MouseEvent, el: LabelElement, dir: string) {
     if (el.type === 'line') {
       const thickPx = 0.2 * MM_TO_PX * ZOOM_FACTOR;
       if (isVert) { newW = thickPx; } else { newH = thickPx; }
+    }
+
+    // ==========================================
+    // 🌟 修复点2：精准阻止文本框被拉扯到小于文字！
+    // ==========================================
+    // ==========================================
+    // 🌟 修复点2：精准阻止文本框被拉扯到小于文字，同时完美支持缩小多余空白！
+    // ==========================================
+    if (el.type === 'text' && domNode) {
+      const textChild = domNode.firstElementChild as HTMLElement;
+      if (textChild) {
+        // 1. 临时保存原有高度，并强制设为 auto 解除 h-full 的束缚
+        const oldChildH = textChild.style.height;
+        const oldNodeH = domNode.style.height;
+        textChild.style.height = 'auto';
+        domNode.style.height = 'auto';
+        
+        // 2. 将临时 DOM 宽度设为新宽度，让浏览器瞬间重新排版
+        domNode.style.width = `${newW}px`;
+        
+        // 3. 此时测算出来的才是文字纯天然、最真实的所需高度！
+        const realMinH = textChild.scrollHeight;
+        
+        // 4. 测完之后立刻恢复原有状态（速度极快，肉眼不可见）
+        textChild.style.height = oldChildH;
+        domNode.style.height = oldNodeH;
+        
+        // 5. 如果用户拖拽的高度小于文字实际需要的高度，强制托底保护
+        if (newH < realMinH) {
+          newH = realMinH;
+          // 如果是往上拖拽，还需要同步修正 Top 坐标防止组件往上瞬移漂移
+          if (dir.includes('n')) newT = startTop + startH - realMinH;
+        }
+      }
     }
 
     el.style.width = `${newW}px`; el.style.height = `${newH}px`; el.style.left = `${newL}px`; el.style.top = `${newT}px`;

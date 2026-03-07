@@ -123,12 +123,14 @@ async function executeMigration(platform: string, authResult: any, event: any) {
       ];
 
       function convertOldLabelData(sourceJson: any, targetPlatform: string) {
+        const wMM = sourceJson.width || sourceJson.signWidth || 100;
+        const hMM = sourceJson.height || sourceJson.signHigh || 100;
+
         const outLabel = {
           id: Date.now().toString() + Math.floor(Math.random() * 10000).toString(),
           name: (sourceJson.name || "导入的标签") + "（甩手）",
-          // 🌟 修复1：兼容甩手最新的宽/高字段名 signWidth / signHigh
-          wMM: sourceJson.width || sourceJson.signWidth || 100, 
-          hMM: sourceJson.height || sourceJson.signHigh || 100,
+          wMM: wMM,
+          hMM: hMM,
           platform: targetPlatform, 
           elements: [] as any[]
         };
@@ -140,10 +142,29 @@ async function executeMigration(platform: string, authResult: any, event: any) {
           let zIndex = 100;
           const elementsArray = Array.isArray(parsedData) ? parsedData : (parsedData.objects || []);
 
+          let sWidth = sourceJson.canvasWidth || sourceJson.width || 0;
+          let sHeight = sourceJson.canvasHeight || sourceJson.height || 0;
+          
+          if (!sWidth && sourceJson.proportion) {
+              sWidth = wMM * sourceJson.proportion;
+              sHeight = hMM * sourceJson.proportion;
+          }
+
+          const localW = wMM * 7.56;
+          const localH = hMM * 7.56;
+
+          let scaleX = 1;
+          let scaleY = 1;
+
+          if (sWidth > 0 && sHeight > 0) {
+              scaleX = localW / sWidth;
+              scaleY = localH / sHeight;
+          }
+          
+          const R = (scaleX + scaleY) / 2;
+
           if (elementsArray && elementsArray.length > 0) {
             outLabel.elements = elementsArray.map((el: any) => {
-              
-              // 1. 获取基础真实宽高（兼容底层 line 的 x/y 坐标系统）
               let w = (el.width || 0) * (el.scaleX || 1);
               let h = (el.height || 0) * (el.scaleY || 1);
               if (el.type === 'line' && w === 0 && h === 0) {
@@ -151,18 +172,15 @@ async function executeMigration(platform: string, authResult: any, event: any) {
                 h = Math.abs((el.y2 || 0) - (el.y1 || 0)) * (el.scaleY || 1);
               }
 
-              // 🌟 核心修复：引入矩阵运算！完美处理 angle 旋转导致的横线变竖线和坐标错位
               let rad = (el.angle || 0) * Math.PI / 180;
               let cos = Math.cos(rad);
               let sin = Math.sin(rad);
 
-              // 判断中心锚点（兼容 Fabric.js 规则）
               let originX = el.originX || 'left';
               let originY = el.originY || 'top';
               let px = originX === 'center' ? w / 2 : (originX === 'right' ? w : 0);
               let py = originY === 'center' ? h / 2 : (originY === 'bottom' ? h : 0);
 
-              // 获取相对于中心锚点的 4 个角坐标
               let corners = [
                 { x: -px, y: -py },
                 { x: w - px, y: -py },
@@ -170,22 +188,20 @@ async function executeMigration(platform: string, authResult: any, event: any) {
                 { x: w - px, y: h - py }
               ];
 
-              // 将旋转后的角坐标还原为绝对定位
               let absCorners = corners.map(c => ({
                 x: (el.left || 0) + (c.x * cos - c.y * sin),
                 y: (el.top || 0) + (c.x * sin + c.y * cos)
               }));
 
-              // 求出外接边界框（真实占用的物理空间位置）
               let minX = Math.min(...absCorners.map(c => c.x));
               let maxX = Math.max(...absCorners.map(c => c.x));
               let minY = Math.min(...absCorners.map(c => c.y));
               let maxY = Math.max(...absCorners.map(c => c.y));
 
-              let actualW = maxX - minX;
-              let actualH = maxY - minY;
-              let trueX = minX;
-              let trueY = minY;
+              let actualW = (maxX - minX) * R;
+              let actualH = (maxY - minY) * R;
+              let trueX = minX * R;
+              let trueY = minY * R;
 
               const out: any = { 
                 id: (Date.now() + Math.floor(Math.random() * 100000)).toString(), 
@@ -205,23 +221,29 @@ async function executeMigration(platform: string, authResult: any, event: any) {
               else if (el.type === 'textbox' || el.type === 'text') {
                 out.type = 'text'; 
                 out.content = el.text || ''; 
-                out.fontSize = ((el.fontSize || 14) * (el.scaleY || 1)) + 'px'; 
-                out.fontWeight = el.fontWeight === 'bold' ? 'bold' : 'normal';
+                
+                // 🌟 核心修复：根据是否加粗，动态决定扣减的误差单位
+                let isBold = el.fontWeight === 'bold' || String(el.fontWeight) === '700' || Number(el.fontWeight) >= 600 || el.bold === true || el.isBold === true || String(el.fontFamily).toLowerCase().includes('bold');
+                out.fontWeight = isBold ? 'bold' : 'normal';
+
+                let offset = isBold ? 2 : 2; // 加粗减4，普通减2
+                let exactFontSize = ((el.fontSize || 14) * (el.scaleY || 1) * R) - offset;
+                
+                out.fontSize = Math.max(exactFontSize, 10).toFixed(2) + 'px'; 
               } 
-              // 🌟 修改点 2：线条的长宽判定改为根据旋转后的真实边界框
               else if (el.type === 'rect' || el.type === 'line') {
                 out.type = 'line'; 
                 let isVertical = actualH > actualW;
                 out.isVertical = isVertical ? 'true' : 'false';
                 
                 if (isVertical) {
-                  out.style.width = '1.5px'; // 竖线固定厚度
-                  out.style.height = Math.max(actualH, 1).toFixed(2) + 'px'; // 提取竖线长度
-                  out.style.left = (trueX + actualW / 2 - 0.75).toFixed(2) + 'px'; // 抵消极细边框引发的居中偏移
+                  out.style.width = '1.5px'; 
+                  out.style.height = Math.max(actualH, 1).toFixed(2) + 'px'; 
+                  out.style.left = (trueX + actualW / 2 - 0.75).toFixed(2) + 'px'; 
                 } else {
-                  out.style.height = '1.5px'; // 横线固定厚度
-                  out.style.width = Math.max(actualW, 1).toFixed(2) + 'px'; // 提取横线长度
-                  out.style.top = (trueY + actualH / 2 - 0.75).toFixed(2) + 'px'; // 抵消极细边框引发的居中偏移
+                  out.style.height = '1.5px'; 
+                  out.style.width = Math.max(actualW, 1).toFixed(2) + 'px'; 
+                  out.style.top = (trueY + actualH / 2 - 0.75).toFixed(2) + 'px'; 
                 }
               } 
               else if (el.type === 'image') {
@@ -231,11 +253,10 @@ async function executeMigration(platform: string, authResult: any, event: any) {
               return out;
             });
           }
-        } catch (err: any) {
+        } catch (err: any) { 
           console.error(`\n❌ [ShuaiShou-Convert-Error] 转换数据时发生严重异常！`);
           console.error(`   👉 异常标签名称: ${sourceJson.name || '未命名'}`);
           console.error(`   👉 错误详情: ${err.stack || err.message}`);
-          console.error(`   👉 原始报错节点:`, err);
         }
         return outLabel;
       }
@@ -311,64 +332,165 @@ async function executeMigration(platform: string, authResult: any, event: any) {
       const jiatongPlatforms = ['TEMU', 'SHEIN', 'TIKTOK', 'ALIEXPRESS', 'AMAZON'];
 
       function convertJiatongLabelData(sourceJson: any, targetPlatform: string) {
-        const R = 1.25; 
-        const fontRatio = 0.85; 
+        // 1. 获取物理尺寸 (单位毫米)
+        const wMM = sourceJson.width || sourceJson.tmWidth || 100;
+        const hMM = sourceJson.height || sourceJson.tmHeight || 100;
+
         const outLabel = {
           id: Date.now().toString() + Math.floor(Math.random() * 10000).toString(),
           name: (sourceJson.name || "导入的标签") + "（佳同）",
-          wMM: sourceJson.width || sourceJson.tmWidth || 100,
-          hMM: sourceJson.height || sourceJson.tmHeight || 100,
-          platform: targetPlatform, elements: [] as any[]
+          wMM: wMM,
+          hMM: hMM,
+          platform: targetPlatform, 
+          elements: [] as any[]
         };
+
         try {
           if (sourceJson.canvasJSON) {
             const canvasData = JSON.parse(sourceJson.canvasJSON);
             let zIndex = 100;
+            
             if (canvasData.objects && Array.isArray(canvasData.objects)) {
-              outLabel.elements = canvasData.objects.map((el: any) => {
-                const out: any = { id: (Date.now() + Math.floor(Math.random() * 100000)).toString(), style: { zIndex: zIndex++ } };
-                
-                let w = (el.width || 0) * (el.scaleX || 1); let h = (el.height || 0) * (el.scaleY || 1);
-                if (el.type === 'line' && w === 0 && h === 0) { w = Math.abs((el.x2 || 0) - (el.x1 || 0)) * (el.scaleX || 1); h = Math.abs((el.y2 || 0) - (el.y1 || 0)) * (el.scaleY || 1); }
-                
-                let rad = (el.angle || 0) * Math.PI / 180; let cos = Math.cos(rad); let sin = Math.sin(rad);
-                let px = el.originX === 'center' ? w / 2 : (el.originX === 'right' ? w : 0); let py = el.originY === 'center' ? h / 2 : (el.originY === 'bottom' ? h : 0);
-                
-                let corners = [{ x: -px, y: -py }, { x: w - px, y: -py }, { x: -px, y: h - py }, { x: w - px, y: h - py }];
-                let absCorners = corners.map(c => ({ x: el.left + (c.x * cos - c.y * sin), y: el.top + (c.x * sin + c.y * cos) }));
-                
-                let minX = Math.min(...absCorners.map(c => c.x)); let maxX = Math.max(...absCorners.map(c => c.x)); let minY = Math.min(...absCorners.map(c => c.y)); let maxY = Math.max(...absCorners.map(c => c.y));
-                let actualW = (maxX - minX) * R; let actualH = (maxY - minY) * R; let trueX = minX * R; let trueY = minY * R;
+              
+              // ==========================================
+              // 🌟 核心升级：计算佳同的动态全局缩放比例 (R)
+              // ==========================================
+              let sWidth = canvasData.width || sourceJson.pxWidth || 0;
+              let sHeight = canvasData.height || sourceJson.pxHeight || 0;
+              
+              const localW = wMM * 7.56;
+              const localH = hMM * 7.56;
+              
+              // 如果佳同没有提供内部像素宽，默认使用其经典的 1.25 换算比
+              let R = 1.25; 
+              if (sWidth > 0 && sHeight > 0) {
+                const scaleX = localW / sWidth;
+                const scaleY = localH / sHeight;
+                R = (scaleX + scaleY) / 2;
+              }
 
+              const fontRatio = 0.85; // 佳同特有的内置字体大小衰减补正系数
+
+              outLabel.elements = canvasData.objects.map((el: any) => {
+                
+                // 1. 提取基础真实宽高（兼容底层 x1/y1 线条逻辑）
+                let w = (el.width || 0) * (el.scaleX || 1);
+                let h = (el.height || 0) * (el.scaleY || 1);
+                if (el.type === 'line' && w === 0 && h === 0) {
+                  w = Math.abs((el.x2 || 0) - (el.x1 || 0)) * (el.scaleX || 1);
+                  h = Math.abs((el.y2 || 0) - (el.y1 || 0)) * (el.scaleY || 1);
+                }
+
+                // 2. 矩阵运算：完美处理角度 angle 导致的横线变竖线和位置漂移
+                let rad = (el.angle || 0) * Math.PI / 180;
+                let cos = Math.cos(rad);
+                let sin = Math.sin(rad);
+
+                let originX = el.originX || 'left';
+                let originY = el.originY || 'top';
+                let px = originX === 'center' ? w / 2 : (originX === 'right' ? w : 0);
+                let py = originY === 'center' ? h / 2 : (originY === 'bottom' ? h : 0);
+
+                let corners = [
+                  { x: -px, y: -py },
+                  { x: w - px, y: -py },
+                  { x: -px, y: h - py },
+                  { x: w - px, y: h - py }
+                ];
+
+                let absCorners = corners.map(c => ({
+                  x: (el.left || 0) + (c.x * cos - c.y * sin),
+                  y: (el.top || 0) + (c.x * sin + c.y * cos)
+                }));
+
+                let minX = Math.min(...absCorners.map(c => c.x));
+                let maxX = Math.max(...absCorners.map(c => c.x));
+                let minY = Math.min(...absCorners.map(c => c.y));
+                let maxY = Math.max(...absCorners.map(c => c.y));
+
+                // 🌟 3. 将极值坐标统一乘以计算出的全局比例 R
+                let actualW = (maxX - minX) * R;
+                let actualH = (maxY - minY) * R;
+                let trueX = minX * R;
+                let trueY = minY * R;
+
+                const out: any = { 
+                  id: (Date.now() + Math.floor(Math.random() * 100000)).toString(), 
+                  style: { 
+                    zIndex: zIndex++, 
+                    left: trueX.toFixed(2) + 'px', 
+                    top: trueY.toFixed(2) + 'px', 
+                    width: actualW.toFixed(2) + 'px', 
+                    height: actualH.toFixed(2) + 'px' 
+                  } 
+                };
+
+                // ==============================
+                // 🌟 核心组件映射与渲染误差纠偏
+                // ==============================
+                
                 if (el.type === 'barcode' || el.type === 'BarCode' || el.isBarcode || (el.type === 'image' && el.tag?.isSkuBarCode)) {
-                  out.type = 'barcode'; out.content = el.text || el.content || el.code || '123456'; 
-                  out.customW = Math.round(w / 7.56) || 70; out.customH = Math.round(h / 7.56) || 20;
-                  out.style.width = (out.customW * 7.56).toFixed(2) + 'px'; out.style.height = (out.customH * 7.56).toFixed(2) + 'px'; out.style.left = trueX.toFixed(2) + 'px'; out.style.top = trueY.toFixed(2) + 'px';
-                } else if (el.type === 'textbox' || el.type === 'i-text' || el.type === 'text') {
-                  out.type = 'text'; out.content = el.text || ''; 
-                  let exactFontSize = (el.fontSize || 14) * (el.scaleY || 1) * R * fontRatio; out.fontSize = exactFontSize.toFixed(2) + 'px'; 
+                  out.type = 'barcode'; 
+                  out.content = el.text || el.content || el.code || '123456';
+                  
+                  // 针对老版数据的占位补偿
+                  out.customW = Math.round(actualW / 7.56) || 70; 
+                  out.customH = Math.round(actualH / 7.56) || 20;
+                } 
+                else if (el.type === 'textbox' || el.type === 'i-text' || el.type === 'text') {
+                  out.type = 'text'; 
+                  out.content = el.text || ''; 
+
                   let isBold = el.fontWeight === 'bold' || String(el.fontWeight) === '700' || Number(el.fontWeight) >= 600 || el.bold === true || el.isBold === true || String(el.fontFamily).toLowerCase().includes('bold') || (el.strokeWidth > 0 && el.stroke && el.stroke !== 'transparent' && el.stroke !== '#ffffff');
                   out.fontWeight = isBold ? 'bold' : 'normal';
-                  let widthPadding = exactFontSize * 0.15 + 2; out.style.width = (actualW + widthPadding).toFixed(2) + 'px'; out.style.height = 'auto'; out.style.left = trueX.toFixed(2) + 'px'; out.style.top = trueY.toFixed(2) + 'px'; out.style.lineHeight = el.lineHeight || 1.16; 
+                  
+                  // 🌟 文字渲染：结合比例 R、佳同基数(fontRatio)，并动态扣除浏览器引擎渲染误差（粗体减4，普通减2）
+                  let offset = isBold ? 2 : 2; 
+                  let exactFontSize = ((el.fontSize || 14) * (el.scaleY || 1) * R * fontRatio) - offset;
+                  out.fontSize = Math.max(exactFontSize, 10).toFixed(2) + 'px'; 
+
+                  // 给文字宽度加一点 Padding 冗余，防止换行溢出
+                  let widthPadding = exactFontSize * 0.15 + 2; 
+                  out.style.width = (actualW + widthPadding).toFixed(2) + 'px'; 
+                  out.style.height = 'auto'; 
+                  out.style.lineHeight = el.lineHeight || 1.16; 
+                  
                   let isSingleLine = (el.textLines && el.textLines.length === 1) || !out.content.includes('\n');
-                  if (isSingleLine) { out.style.whiteSpace = 'nowrap'; } else { out.style.whiteSpace = 'pre-wrap'; out.style.wordBreak = 'break-word'; }
-                } else if (el.type === 'rect' || el.type === 'line') {
-                  out.type = 'line'; let isVertical = actualH > actualW;
-                  if (isVertical) { out.isVertical = 'true'; out.style.width = '1.5px'; out.style.height = actualH.toFixed(2) + 'px'; out.style.left = (trueX + actualW / 2 - 0.75).toFixed(2) + 'px'; out.style.top = trueY.toFixed(2) + 'px'; } 
-                  else { out.isVertical = 'false'; out.style.height = '1.5px'; out.style.width = actualW.toFixed(2) + 'px'; out.style.left = trueX.toFixed(2) + 'px'; out.style.top = (trueY + actualH / 2 - 0.75).toFixed(2) + 'px'; }
-                } else if (el.type === 'image') {
-                  out.type = 'image'; out.imgUrl = el.src || el.url || ''; out.style.width = actualW.toFixed(2) + 'px'; out.style.height = actualH.toFixed(2) + 'px'; out.style.left = trueX.toFixed(2) + 'px'; out.style.top = trueY.toFixed(2) + 'px';
+                  if (isSingleLine) { 
+                    out.style.whiteSpace = 'nowrap'; 
+                  } else { 
+                    out.style.whiteSpace = 'pre-wrap'; 
+                    out.style.wordBreak = 'break-word'; 
+                  }
+                } 
+                else if (el.type === 'rect' || el.type === 'line') {
+                  out.type = 'line'; 
+                  let isVertical = actualH > actualW;
+                  out.isVertical = isVertical ? 'true' : 'false';
+                  
+                  // 🌟 线条渲染：固定 1.5px 极细可见边框，并抵消中心点漂移 (0.75)
+                  if (isVertical) { 
+                    out.style.width = '1.5px'; 
+                    out.style.height = Math.max(actualH, 1).toFixed(2) + 'px'; 
+                    out.style.left = (trueX + actualW / 2 - 0.75).toFixed(2) + 'px'; 
+                  } else { 
+                    out.style.height = '1.5px'; 
+                    out.style.width = Math.max(actualW, 1).toFixed(2) + 'px'; 
+                    out.style.top = (trueY + actualH / 2 - 0.75).toFixed(2) + 'px'; 
+                  }
+                } 
+                else if (el.type === 'image') {
+                  out.type = 'image'; 
+                  out.imgUrl = el.src || el.url || ''; 
                 }
                 return out;
               });
             }
           }
         } catch (err: any) { 
-          // 🌟 增强版错误日志
           console.error(`\n❌ [JiaTong-Convert-Error] 转换数据时发生严重异常！`);
           console.error(`   👉 异常标签名称: ${sourceJson.name || '未命名'}`);
           console.error(`   👉 错误详情: ${err.stack || err.message}`);
-          console.error(`   👉 原始报错节点:`, err);
         }
         return outLabel;
       }
